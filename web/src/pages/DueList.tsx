@@ -1,0 +1,494 @@
+import { useEffect, useState, useMemo } from 'react'
+import { supabase } from '../utils/supabase'
+import {
+  Box,
+  Container,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Chip,
+  Alert,
+  CircularProgress,
+  InputAdornment,
+  IconButton,
+} from '@mui/material'
+import {
+  Search as SearchIcon,
+  Visibility as ViewIcon,
+  Close as CloseIcon,
+} from '@mui/icons-material'
+
+type Registration = {
+  id: string
+  name: string
+  phone: string
+  address: string
+  card_no?: string
+  created_at: string
+}
+
+type Payment = {
+  id: string
+  amount: number
+  created_at: string
+  method?: string
+  transaction_id?: string
+  card_no?: string // ✅ added this line for linking with registration
+}
+
+type CustomerDue = {
+  customer: Registration
+  totalDue: number
+  paidAmount: number
+  remainingDue: number
+  dueDetails: Array<{
+    month: string
+    dueDate: string
+    amount: number
+    status: 'paid' | 'pending' | 'overdue'
+  }>
+}
+
+// Monthly due schedule based on the image (16 months from Oct 2025 to Jan 2027)
+const DUE_SCHEDULE = [
+  { month: 'Oct 2025', dueDate: '02-10-2025', amount: 2500 },
+  { month: 'Nov 2025', dueDate: '02-11-2025', amount: 2500 },
+  { month: 'Dec 2025', dueDate: '02-12-2025', amount: 2500 },
+  { month: 'Jan 2026', dueDate: '02-01-2026', amount: 2500 },
+  { month: 'Feb 2026', dueDate: '02-02-2026', amount: 2500 },
+  { month: 'Mar 2026', dueDate: '02-03-2026', amount: 2500 },
+  { month: 'Apr 2026', dueDate: '02-04-2026', amount: 2500 },
+  { month: 'May 2026', dueDate: '02-05-2026', amount: 2500 },
+  { month: 'Jun 2026', dueDate: '02-06-2026', amount: 2500 },
+  { month: 'Jul 2026', dueDate: '02-07-2026', amount: 2500 },
+  { month: 'Aug 2026', dueDate: '02-08-2026', amount: 2500 },
+  { month: 'Sep 2026', dueDate: '02-09-2026', amount: 2500 },
+  { month: 'Oct 2026', dueDate: '02-10-2026', amount: 2500 },
+  { month: 'Nov 2026', dueDate: '02-11-2026', amount: 2500 },
+  { month: 'Dec 2026', dueDate: '02-12-2026', amount: 2500 },
+  { month: 'Jan 2027', dueDate: '02-01-2027', amount: 2500 },
+]
+
+export default function DueList() {
+  const [customers, setCustomers] = useState<Registration[]>([])
+  const [payments, setPayments] = useState<Payment[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerDue | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch all customers and payments
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!supabase) {
+        setError('Missing Supabase configuration')
+        setLoading(false)
+        return
+      }
+
+      try {
+        setLoading(true)
+        
+        // Fetch all customers
+        const { data: customersData, error: customersError } = await supabase
+          .from('registrations')
+          .select('*')
+          .order('created_at', { ascending: false })
+
+        if (customersError) {
+          setError(customersError.message)
+          return
+        }
+
+        // Fetch all payments
+        const { data: paymentsData, error: paymentsError } = await supabase
+          .from('payments')
+          .select('*')
+          .order('created_at', { ascending: true })
+
+        if (paymentsError) {
+          setError(paymentsError.message)
+          return
+        }
+
+        setCustomers(customersData || [])
+        setPayments(paymentsData || [])
+      } catch (err) {
+        setError('Failed to fetch data')
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  // Calculate customer dues
+  const customerDues = useMemo(() => {
+    return customers.map(customer => {
+      const customerPayments = payments.filter(
+        p => p.card_no && p.card_no === customer.card_no // ✅ replaced registration_id
+      )
+      const totalPaid = customerPayments.reduce((sum, payment) => sum + payment.amount, 0)
+      const totalDue = DUE_SCHEDULE.reduce((sum, due) => sum + due.amount, 0)
+      const remainingDue = totalDue - totalPaid
+
+      // Calculate due details for each month
+      const dueDetails = DUE_SCHEDULE.map(schedule => {
+        const dueDate = new Date(schedule.dueDate.split('-').reverse().join('-'))
+        const today = new Date()
+        const isOverdue = dueDate < today
+        const isPaid = totalPaid >= schedule.amount
+
+        let status: 'paid' | 'pending' | 'overdue' = 'pending'
+        if (isPaid) {
+          status = 'paid'
+        } else if (isOverdue) {
+          status = 'overdue'
+        }
+
+        return {
+          month: schedule.month,
+          dueDate: schedule.dueDate,
+          amount: schedule.amount,
+          status
+        }
+      })
+
+      return {
+        customer,
+        totalDue,
+        paidAmount: totalPaid,
+        remainingDue,
+        dueDetails
+      }
+    })
+  }, [customers, payments])
+
+  // Filter customers based on search term
+  const filteredDues = useMemo(() => {
+    if (!searchTerm.trim()) return customerDues
+
+    const term = searchTerm.toLowerCase()
+    return customerDues.filter(due => 
+      due.customer.name.toLowerCase().includes(term) ||
+      due.customer.card_no?.toLowerCase().includes(term) ||
+      due.customer.phone.includes(term)
+    )
+  }, [customerDues, searchTerm])
+
+  const handleViewDetails = (due: CustomerDue) => {
+    setSelectedCustomer(due)
+    setDialogOpen(true)
+  }
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false)
+    setSelectedCustomer(null)
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'paid': return 'success'
+      case 'overdue': return 'error'
+      default: return 'warning'
+    }
+  }
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'paid': return 'Paid'
+      case 'overdue': return 'Overdue'
+      default: return 'Pending'
+    }
+  }
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+        <CircularProgress />
+      </Box>
+    )
+  }
+
+  return (
+    <Box sx={{ position: 'relative', minHeight: '100vh', bgcolor: 'background.default' }}>
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: 'url(/logo.jpeg)',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
+          backgroundSize: 'min(60vw, 420px)',
+          opacity: 0.05,
+          pointerEvents: 'none',
+        }}
+      />
+      <Container sx={{ py: { xs: 4, md: 6 }, position: 'relative' }}>
+        <Typography variant="h4" sx={{ fontWeight: 800, mb: 2 }}>
+          Due List
+        </Typography>
+
+        {error && (
+          <Alert sx={{ mb: 3 }} severity="error" onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+
+        {/* Search Bar */}
+        <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+          <TextField
+            fullWidth
+            placeholder="Search by customer name, card number, or phone number..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Paper>
+
+        {/* Due List Table */}
+        <Paper elevation={2} sx={{ overflow: 'hidden' }}>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ bgcolor: 'primary.main' }}>
+                <TableCell sx={{ color: 'white', fontWeight: 700 }}>Customer Name</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 700 }}>Card No</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 700 }}>Phone</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 700 }}>Total Due</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 700 }}>Paid Amount</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 700 }}>Remaining Due</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 700 }}>Status</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 700 }}>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredDues.map((due) => (
+                <TableRow key={due.customer.id} hover>
+                  <TableCell>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      {due.customer.name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {due.customer.address}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>{due.customer.card_no || '—'}</TableCell>
+                  <TableCell>{due.customer.phone}</TableCell>
+                  <TableCell>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      ₹{due.totalDue.toFixed(2)}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="subtitle2" color="success.main" sx={{ fontWeight: 600 }}>
+                      ₹{due.paidAmount.toFixed(2)}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography 
+                      variant="subtitle2" 
+                      color={due.remainingDue > 0 ? 'error.main' : 'success.main'}
+                      sx={{ fontWeight: 600 }}
+                    >
+                      ₹{due.remainingDue.toFixed(2)}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={due.remainingDue === 0 ? 'Fully Paid' : 'Pending'}
+                      color={due.remainingDue === 0 ? 'success' : 'warning'}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      size="small"
+                      startIcon={<ViewIcon />}
+                      onClick={() => handleViewDetails(due)}
+                      variant="outlined"
+                    >
+                      View Details
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filteredDues.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8}>
+                    <Typography align="center" color="text.secondary" sx={{ py: 3 }}>
+                      {searchTerm ? 'No customers found matching your search.' : 'No customers found.'}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Paper>
+
+        {/* Payment History Dialog */}
+        <Dialog 
+          open={dialogOpen} 
+          onClose={handleCloseDialog}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Typography variant="h6">
+                Payment History - {selectedCustomer?.customer.name}
+              </Typography>
+              <IconButton onClick={handleCloseDialog}>
+                <CloseIcon />
+              </IconButton>
+            </Stack>
+          </DialogTitle>
+          <DialogContent>
+            {selectedCustomer && (
+              <Stack spacing={3}>
+                {/* Customer Info */}
+                <Paper elevation={1} sx={{ p: 2, bgcolor: 'grey.50' }}>
+                  <Typography variant="h6" gutterBottom>
+                    Customer Information
+                  </Typography>
+                  <Stack direction="row" spacing={4}>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Name</Typography>
+                      <Typography variant="subtitle1">{selectedCustomer.customer.name}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Card No</Typography>
+                      <Typography variant="subtitle1">{selectedCustomer.customer.card_no || '—'}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Phone</Typography>
+                      <Typography variant="subtitle1">{selectedCustomer.customer.phone}</Typography>
+                    </Box>
+                  </Stack>
+                </Paper>
+
+                {/* Due Summary */}
+                <Paper elevation={1} sx={{ p: 2, bgcolor: 'grey.50' }}>
+                  <Typography variant="h6" gutterBottom>
+                    Due Summary
+                  </Typography>
+                  <Stack direction="row" spacing={4}>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Total Due</Typography>
+                      <Typography variant="h6">₹{selectedCustomer.totalDue.toFixed(2)}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Paid Amount</Typography>
+                      <Typography variant="h6" color="success.main">₹{selectedCustomer.paidAmount.toFixed(2)}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Remaining Due</Typography>
+                      <Typography 
+                        variant="h6" 
+                        color={selectedCustomer.remainingDue > 0 ? 'error.main' : 'success.main'}
+                      >
+                        ₹{selectedCustomer.remainingDue.toFixed(2)}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Paper>
+
+                {/* Monthly Due Details */}
+                <Box>
+                  <Typography variant="h6" gutterBottom>
+                    Monthly Due Details
+                  </Typography>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 700 }}>Month</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Due Date</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Amount</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {selectedCustomer.dueDetails.map((detail, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{detail.month}</TableCell>
+                          <TableCell>{detail.dueDate}</TableCell>
+                          <TableCell>₹{detail.amount.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={getStatusLabel(detail.status)}
+                              color={getStatusColor(detail.status) as any}
+                              size="small"
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Box>
+
+                {/* Payment History */}
+                <Box>
+                  <Typography variant="h6" gutterBottom>
+                    Payment History
+                  </Typography>
+                  {payments.filter(p => p.card_no === selectedCustomer.customer.card_no).length > 0 ? ( // ✅ fixed filter
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Amount</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Method</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Transaction ID</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {payments
+                          .filter(p => p.card_no === selectedCustomer.customer.card_no)
+                          .map((payment, index) => (
+                            <TableRow key={payment.id || index}>
+                              <TableCell>
+                                {new Date(payment.created_at).toLocaleDateString('en-IN')}
+                              </TableCell>
+                              <TableCell>₹{payment.amount.toFixed(2)}</TableCell>
+                              <TableCell>{payment.method || 'Cash'}</TableCell>
+                              <TableCell>{payment.transaction_id || '—'}</TableCell>
+                            </TableRow>
+                          ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <Typography color="text.secondary" sx={{ py: 2 }}>
+                      No payment history available.
+                    </Typography>
+                  )}
+                </Box>
+              </Stack>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog}>Close</Button>
+          </DialogActions>
+        </Dialog>
+      </Container>
+    </Box>
+  )
+}

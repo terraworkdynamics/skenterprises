@@ -16,6 +16,8 @@ create table if not exists public.payments (
   id uuid primary key default gen_random_uuid(),
   registration_id uuid not null references public.registrations(id) on delete cascade,
   amount numeric(12,2) not null check (amount > 0),
+  method text,
+  transaction_id text,
   created_at timestamp with time zone default now()
 );
 
@@ -30,6 +32,13 @@ create table if not exists public.lucky_draws (
 -- Add winner_month if it doesn't exist
 alter table if exists public.lucky_draws
   add column if not exists winner_month text;
+
+-- Add missing columns to payments table if they don't exist
+alter table if exists public.payments
+  add column if not exists method text;
+
+alter table if exists public.payments
+  add column if not exists transaction_id text;
 
 -- Recommended indexes
 create index if not exists idx_registrations_phone on public.registrations(phone);

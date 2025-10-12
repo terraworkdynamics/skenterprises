@@ -24,6 +24,8 @@ import {
   Payment as PaymentIcon,
   History as HistoryIcon,
   Info as InfoIcon,
+  Receipt as DueListIcon,
+  CalendarMonth as MonthwiseIcon,
 } from '@mui/icons-material'
 
 export default function Dashboard() {
@@ -53,9 +55,25 @@ export default function Dashboard() {
           <Grid item xs={12} md={8}>
             <Grid container spacing={3}>
               <Grid item xs={12} sm={6}>
-                <Card elevation={2}>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>Registration</Typography>
+                <Card 
+                  elevation={2}
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    '&:hover': {
+                      bgcolor: '#f5f5dc',
+                      '& .MuiTypography-root': {
+                        color: '#8b4513',
+                      },
+                      '& .MuiButton-root': {
+                        color: '#8b4513',
+                      }
+                    }
+                  }}
+                >
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Registration</Typography>
                     <Typography color="text.secondary">Add and manage customer registrations.</Typography>
                   </CardContent>
                   <CardActions>
@@ -64,9 +82,25 @@ export default function Dashboard() {
                 </Card>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <Card elevation={2}>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>Payment</Typography>
+                <Card 
+                  elevation={2}
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    '&:hover': {
+                      bgcolor: '#f5f5dc',
+                      '& .MuiTypography-root': {
+                        color: '#8b4513',
+                      },
+                      '& .MuiButton-root': {
+                        color: '#8b4513',
+                      }
+                    }
+                  }}
+                >
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Payment</Typography>
                     <Typography color="text.secondary">Record and track customer payments.</Typography>
                   </CardContent>
                   <CardActions>
@@ -74,10 +108,80 @@ export default function Dashboard() {
                   </CardActions>
                 </Card>
               </Grid>
+              <Grid item xs={12} sm={6}>
+                <Card 
+                  elevation={2}
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    '&:hover': {
+                      bgcolor: '#f5f5dc',
+                      '& .MuiTypography-root': {
+                        color: '#8b4513',
+                      },
+                      '& .MuiButton-root': {
+                        color: '#8b4513',
+                      }
+                    }
+                  }}
+                >
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Due List</Typography>
+                    <Typography color="text.secondary">View customer dues and payment history.</Typography>
+                  </CardContent>
+                  <CardActions>
+                    <Button component={RouterLink} to="/due-list" variant="contained" color="primary" startIcon={<DueListIcon />}>Open</Button>
+                  </CardActions>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Card 
+                  elevation={2}
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    '&:hover': {
+                      bgcolor: '#f5f5dc',
+                      '& .MuiTypography-root': {
+                        color: '#8b4513',
+                      },
+                      '& .MuiButton-root': {
+                        color: '#8b4513',
+                      }
+                    }
+                  }}
+                >
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Monthwise Due</Typography>
+                    <Typography color="text.secondary">View paid and unpaid customers for specific months.</Typography>
+                  </CardContent>
+                  <CardActions>
+                    <Button component={RouterLink} to="/monthwise-due" variant="contained" color="secondary" startIcon={<MonthwiseIcon />}>Open</Button>
+                  </CardActions>
+                </Card>
+              </Grid>
               <Grid item xs={12}>
-                <Card elevation={2}>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>Lucky Draw History</Typography>
+                <Card 
+                  elevation={2}
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    '&:hover': {
+                      bgcolor: '#f5f5dc',
+                      '& .MuiTypography-root': {
+                        color: '#8b4513',
+                      },
+                      '& .MuiButton-root': {
+                        color: '#8b4513',
+                      }
+                    }
+                  }}
+                >
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Lucky Draw History</Typography>
                     <Typography color="text.secondary">View previous winners and draw activity.</Typography>
                   </CardContent>
                   <CardActions>
@@ -116,5 +220,3 @@ export default function Dashboard() {
     </Box>
   )
 }
-
-

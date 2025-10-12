@@ -18,6 +18,8 @@ import Dashboard from './pages/Dashboard'
 import Register from './pages/Register'
 import Payment from './pages/Payment'
 import LuckyDraw from './pages/LuckyDraw'
+import DueList from './pages/DueList'
+import MonthwiseDue from './pages/MonthwiseDue'
 
 const router = createBrowserRouter([
   { path: '/', element: <Home /> },
@@ -26,6 +28,8 @@ const router = createBrowserRouter([
   { path: '/register', element: <Register /> },
   { path: '/payment', element: <Payment /> },
   { path: '/lucky-draw', element: <LuckyDraw /> },
+  { path: '/due-list', element: <DueList /> },
+  { path: '/monthwise-due', element: <MonthwiseDue /> },
 ])
 
 const theme = createTheme({

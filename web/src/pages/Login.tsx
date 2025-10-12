@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from 'react'
+import { type FormEvent, useState } from 'react'
 import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import { supabase } from '../utils/supabase'
 
@@ -40,13 +40,7 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    const saved = localStorage.getItem('rememberEmail')
-    if (saved) {
-      setEmail(saved)
-      setRemember(true)
-    }
-  }, [])
+  // Removed auto-fill functionality to ensure no pre-filled values
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()

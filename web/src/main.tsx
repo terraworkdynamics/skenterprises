@@ -36,6 +36,12 @@ const router = createBrowserRouter([
   { path: '/laptop', element: <Laptop /> },
   { path: '/inverter', element: <Inverter /> },
   { path: '/camera', element: <Camera /> },
+  // Category-scoped routes
+  { path: '/:category/register', element: <Register /> },
+  { path: '/:category/payment', element: <Payment /> },
+  { path: '/:category/due-list', element: <DueList /> },
+  { path: '/:category/monthwise-due', element: <MonthwiseDue /> },
+  { path: '/:category/lucky-draw', element: <LuckyDraw /> },
 ])
 
 const theme = createTheme({

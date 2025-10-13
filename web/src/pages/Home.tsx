@@ -1,4 +1,5 @@
 import { Link as RouterLink } from 'react-router-dom'
+import { useEffect } from 'react'
 import {
   AppBar,
   Toolbar,
@@ -10,10 +11,11 @@ import {
   CardContent,
   Stack,
   Chip,
-  Grid,
   Avatar,
   IconButton,
+  Link,
 } from '@mui/material'
+import Grid from '@mui/material/GridLegacy'
 import {
   Computer as ComputerIcon,
   LaptopMac as LaptopMacIcon,
@@ -65,12 +67,12 @@ function ServiceCard({
         height: '100%',
         borderRadius: 3,
         overflow: 'hidden',
-        background: 'linear-gradient(135deg, #FFF8E7 0%, #FDF6E3 100%)',
-        border: '2px solid #EEDC82',
+        background: 'linear-gradient(135deg, #FFF5F7 0%, #FDECF0 100%)',
+        border: '2px solid #F2D6DA',
         display: 'flex',
         flexDirection: 'column',
         '&:hover': {
-          borderColor: '#D4AF37',
+          borderColor: '#800000',
         }
       }}
     >
@@ -89,7 +91,7 @@ function ServiceCard({
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'linear-gradient(45deg, rgba(128, 0, 0, 0.1), rgba(212, 175, 55, 0.1))',
+            background: 'linear-gradient(45deg, rgba(128, 0, 0, 0.08), rgba(128, 0, 0, 0.06))',
           }
         }}
       />
@@ -121,6 +123,9 @@ function ServiceCard({
 }
 
 export default function Home() {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Navigation Bar */}
@@ -155,7 +160,7 @@ export default function Home() {
       <Box 
         sx={{ 
           minHeight: '100vh',
-          background: 'linear-gradient(135deg, #FFF8E7 0%, #FDF6E3 50%, #FFF8E7 100%)',
+          background: 'linear-gradient(135deg, #FFF5F7 0%, #FDECF0 50%, #FFF5F7 100%)',
           display: 'flex',
           alignItems: 'center',
           position: 'relative',
@@ -167,11 +172,25 @@ export default function Home() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'radial-gradient(circle at 20% 80%, rgba(212, 175, 55, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(128, 0, 0, 0.05) 0%, transparent 50%)',
+            background: 'radial-gradient(circle at 20% 80%, rgba(128, 0, 0, 0.06) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(128, 0, 0, 0.03) 0%, transparent 50%)',
             zIndex: 1,
           }
         }}
       >
+        {/* Transparent logo background overlay */}
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: 'url(/logo.jpeg)',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center',
+            backgroundSize: 'min(60vw, 420px)',
+            opacity: 0.06,
+            pointerEvents: 'none',
+            zIndex: 1,
+          }}
+        />
         <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2 }}>
           <Grid container spacing={{ xs: 3, md: 4 }} alignItems="center">
             <Grid item xs={12} md={6}>
@@ -282,7 +301,7 @@ export default function Home() {
                   icon={<PlaceIcon />} 
                   label="Aland, Chakrikata" 
                   sx={{ 
-                    bgcolor: '#EEDC82',
+                    bgcolor: '#F2D6DA',
                     color: '#3A3A3A',
                     fontWeight: 500,
                   }} 
@@ -291,7 +310,7 @@ export default function Home() {
                   icon={<StarIcon />} 
                   label="Quality & Reliability" 
                   sx={{ 
-                    bgcolor: '#D4AF37',
+                    bgcolor: '#E6BCC2',
                     color: '#3A3A3A',
                     fontWeight: 500,
                   }} 
@@ -325,7 +344,6 @@ export default function Home() {
                     border: '2px solid #D4AF37',
                     boxShadow: '0 25px 50px rgba(0,0,0,0.15), 0 0 30px rgba(212, 175, 55, 0.2)',
                     animation: 'pulse 3s ease-in-out infinite',
-                    position: 'relative',
                     overflow: 'hidden',
                     '&::before': {
                       content: '""',
@@ -357,7 +375,7 @@ export default function Home() {
         id="services" 
         sx={{ 
           py: { xs: 8, md: 12 }, 
-          background: 'linear-gradient(135deg, #FFF8E7 0%, #FDF6E3 50%, #FFF8E7 100%)',
+          background: 'linear-gradient(135deg, #FFF5F7 0%, #FDECF0 50%, #FFF5F7 100%)',
           position: 'relative',
           '&::before': {
             content: '""',
@@ -366,7 +384,7 @@ export default function Home() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'radial-gradient(circle at 70% 30%, rgba(128, 0, 0, 0.03) 0%, transparent 50%), radial-gradient(circle at 30% 70%, rgba(212, 175, 55, 0.05) 0%, transparent 50%)',
+            background: 'radial-gradient(circle at 70% 30%, rgba(128, 0, 0, 0.04) 0%, transparent 50%), radial-gradient(circle at 30% 70%, rgba(128, 0, 0, 0.03) 0%, transparent 50%)',
             zIndex: 1,
           }
         }}
@@ -389,7 +407,7 @@ export default function Home() {
                   transform: 'translateX(-50%)',
                   width: '80px',
                   height: '4px',
-                  background: 'linear-gradient(90deg, #D4AF37, #EEDC82)',
+                  background: 'linear-gradient(90deg, #800000, #5B0000)',
                   borderRadius: '2px',
                   animation: 'shimmer 2s infinite',
                 }
@@ -487,8 +505,8 @@ export default function Home() {
                       p: 3,
                       textAlign: 'center',
                       borderRadius: 3,
-                      background: 'linear-gradient(135deg, #FFF8E7 0%, #FDF6E3 100%)',
-                      border: '1px solid #EEDC82',
+                      background: 'linear-gradient(135deg, #FFF5F7 0%, #FDECF0 100%)',
+                      border: '1px solid #F2D6DA',
                       transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                       position: 'relative',
                       overflow: 'hidden',
@@ -499,7 +517,7 @@ export default function Home() {
                         left: '-100%',
                         width: '100%',
                         height: '100%',
-                        background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.1), transparent)',
+                        background: 'linear-gradient(90deg, transparent, rgba(128, 0, 0, 0.08), transparent)',
                         transition: 'left 0.5s',
                       },
                       '&:hover::before': {
@@ -508,7 +526,7 @@ export default function Home() {
                       '&:hover': {
                         transform: 'translateY(-8px) scale(1.02)',
                         boxShadow: '0 20px 40px rgba(128, 0, 0, 0.15)',
-                        borderColor: '#D4AF37',
+                        borderColor: '#800000',
                       }
                     }}
                   >
@@ -703,7 +721,10 @@ export default function Home() {
           <Box sx={{ borderTop: '1px solid #800000', mt: 4, pt: 4, textAlign: 'center' }}>
             <Typography variant="body2" sx={{ opacity: 0.8 }}>
               © {new Date().getFullYear()} S K Enterprises • One Stop IT Accessories Shop • 
-              Quality • Reliability • Service
+              Quality • Reliability • Service • Built by{' '}
+              <Link href="https://terradigitalizedynamics.com/" target="_blank" rel="noreferrer" underline="hover" sx={{ color: '#D4AF37', fontWeight: 700 }}>
+                TerraDigitalize Dynamics
+              </Link>
           </Typography>
           </Box>
         </Container>

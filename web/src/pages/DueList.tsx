@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../utils/supabase'
+import { useParams } from 'react-router-dom'
 import {
   Box,
   Container,
@@ -81,6 +82,12 @@ const DUE_SCHEDULE = [
 ]
 
 export default function DueList() {
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }, [])
+  const { category } = useParams()
+  const resolvedCategory = useMemo(() => {
+    const c = (category || '').toLowerCase()
+    return c === 'laptop' || c === 'camera' || c === 'inverter' ? c : null
+  }, [category])
   const [customers, setCustomers] = useState<Registration[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -101,9 +108,10 @@ export default function DueList() {
       try {
         setLoading(true)
         
-        // Fetch all customers
+        // Fetch all customers (category-specific when provided)
+        const registrationsTable = resolvedCategory ? `${resolvedCategory}_registrations` : 'registrations'
         const { data: customersData, error: customersError } = await supabase
-          .from('registrations')
+          .from(registrationsTable)
           .select('*')
           .order('created_at', { ascending: false })
 
@@ -112,9 +120,10 @@ export default function DueList() {
           return
         }
 
-        // Fetch all payments
+        // Fetch all payments (category-specific when provided)
+        const paymentsTable = resolvedCategory ? `${resolvedCategory}_payments` : 'payments'
         const { data: paymentsData, error: paymentsError } = await supabase
-          .from('payments')
+          .from(paymentsTable)
           .select('*')
           .order('created_at', { ascending: true })
 
@@ -134,7 +143,7 @@ export default function DueList() {
     }
 
     fetchData()
-  }, [])
+  }, [resolvedCategory])
 
   // Calculate customer dues
   const customerDues = useMemo(() => {
@@ -240,7 +249,7 @@ export default function DueList() {
       />
       <Container sx={{ py: { xs: 4, md: 6 }, position: 'relative' }}>
         <Typography variant="h4" sx={{ fontWeight: 800, mb: 2 }}>
-          Due List
+          {resolvedCategory ? `${resolvedCategory.charAt(0).toUpperCase()}${resolvedCategory.slice(1)} ` : ''}Due List
         </Typography>
 
         {error && (

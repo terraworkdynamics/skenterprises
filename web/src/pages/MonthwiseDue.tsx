@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../utils/supabase';
+import { useParams } from 'react-router-dom'
 import Grid from '@mui/material/GridLegacy'
 import {
   Box,
@@ -90,6 +91,12 @@ const DUE_SCHEDULE = [
 ]
 
 export default function MonthwiseDue() {
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }, [])
+  const { category } = useParams()
+  const resolvedCategory = useMemo(() => {
+    const c = (category || '').toLowerCase()
+    return c === 'laptop' || c === 'camera' || c === 'inverter' ? c : null
+  }, [category])
   const [customers, setCustomers] = useState<Registration[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
   const [selectedMonth, setSelectedMonth] = useState('')
@@ -112,8 +119,9 @@ export default function MonthwiseDue() {
         setLoading(true)
         
         // Fetch all customers
+        const registrationsTable = resolvedCategory ? `${resolvedCategory}_registrations` : 'registrations'
         const { data: customersData, error: customersError } = await supabase
-          .from('registrations')
+          .from(registrationsTable)
           .select('*')
           .order('created_at', { ascending: false })
 
@@ -123,8 +131,9 @@ export default function MonthwiseDue() {
         }
 
         // Fetch all payments
+        const paymentsTable = resolvedCategory ? `${resolvedCategory}_payments` : 'payments'
         const { data: paymentsData, error: paymentsError } = await supabase
-          .from('payments')
+          .from(paymentsTable)
           .select('*')
           .order('created_at', { ascending: true })
 
@@ -144,7 +153,7 @@ export default function MonthwiseDue() {
     }
 
     fetchData()
-  }, [])
+  }, [resolvedCategory])
 
   // Calculate customer dues for the selected month
   const monthwiseData = useMemo(() => {
@@ -279,7 +288,7 @@ export default function MonthwiseDue() {
       />
       <Container sx={{ py: { xs: 4, md: 6 }, position: 'relative' }}>
         <Typography variant="h4" sx={{ fontWeight: 800, mb: 2 }}>
-          Monthwise Due
+          {resolvedCategory ? `${resolvedCategory.charAt(0).toUpperCase()}${resolvedCategory.slice(1)} ` : ''}Monthwise Due
         </Typography>
 
         {error && (
@@ -364,11 +373,11 @@ export default function MonthwiseDue() {
             </Grid>
 
             {/* Paid Customers Table */}
-            <Paper elevation={2} sx={{ mb: 3, overflow: 'hidden' }}>
+            <Paper elevation={2} sx={{ mb: 3, overflowX: 'auto' }}>
               <Typography variant="h6" sx={{ p: 2, bgcolor: 'success.main', color: 'white', fontWeight: 700 }}>
                 ✅ Paid Customers for {selectedMonth}
               </Typography>
-              <Table>
+              <Table sx={{ minWidth: 600 }}>
                 <TableHead>
                   <TableRow sx={{ bgcolor: 'success.light' }}>
                     <TableCell sx={{ fontWeight: 700 }}>Customer Name</TableCell>
@@ -440,11 +449,11 @@ export default function MonthwiseDue() {
             </Paper>
 
             {/* Unpaid Customers Table */}
-            <Paper elevation={2} sx={{ overflow: 'hidden' }}>
+            <Paper elevation={2} sx={{ overflowX: 'auto' }}>
               <Typography variant="h6" sx={{ p: 2, bgcolor: 'error.main', color: 'white', fontWeight: 700 }}>
                 ❌ Unpaid Customers for {selectedMonth}
               </Typography>
-              <Table>
+              <Table sx={{ minWidth: 600 }}>
                 <TableHead>
                   <TableRow sx={{ bgcolor: 'error.light' }}>
                     <TableCell sx={{ fontWeight: 700 }}>Customer Name</TableCell>

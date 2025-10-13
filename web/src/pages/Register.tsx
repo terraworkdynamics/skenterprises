@@ -1,5 +1,6 @@
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../utils/supabase'
+import { useParams } from 'react-router-dom'
 import {
   Box,
   Container,
@@ -28,6 +29,8 @@ import {
 } from '@mui/icons-material'
 
 export default function Register() {
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }, [])
+  const { category } = useParams()
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
@@ -35,6 +38,11 @@ export default function Register() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [successDialogOpen, setSuccessDialogOpen] = useState(false)
+
+  const resolvedCategory = useMemo(() => {
+    const c = (category || '').toLowerCase()
+    return c === 'laptop' || c === 'camera' || c === 'inverter' ? c : null
+  }, [category])
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -52,11 +60,15 @@ export default function Register() {
       ? cardNo.toUpperCase() 
       : `SKPC${cardNo.toUpperCase()}`
     
-    const { error } = await supabase.from('registrations').insert({ 
-      name, 
-      phone, 
-      address, 
-      card_no: cardNumberWithPrefix 
+    const table = resolvedCategory
+      ? `${resolvedCategory}_registrations`
+      : 'registrations'
+
+    const { error } = await supabase.from(table).insert({ 
+      name,
+      phone,
+      address,
+      card_no: cardNumberWithPrefix,
     })
     
     setLoading(false)
@@ -134,7 +146,7 @@ export default function Register() {
                     }} 
                   />
                   <Typography variant="h4" sx={{ fontWeight: 800, color: 'primary.main', textAlign: 'center' }}>
-                    Customer Registration
+                    {resolvedCategory ? `${resolvedCategory.charAt(0).toUpperCase()}${resolvedCategory.slice(1)} ` : ''}Customer Registration
                   </Typography>
                   <Typography color="text.secondary" align="center" sx={{ maxWidth: 400 }}>
                     Register new customers for our services and payment tracking system.

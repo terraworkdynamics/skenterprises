@@ -1,4 +1,4 @@
-import { type MouseEvent } from 'react'
+import { type MouseEvent, useEffect, useState } from 'react'
 import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import { supabase } from '../utils/supabase'
 
@@ -10,26 +10,28 @@ import {
   Box,
   Button,
   Card,
-  CardContent,
-  CardActions,
-  Stack,
   Paper,
+  Stack,
+  Avatar,
   Chip,
-  Divider,
+  LinearProgress,
 } from '@mui/material'
 import Grid from '@mui/material/GridLegacy'
 import {
   Logout as LogoutIcon,
-  PersonAdd as RegisterIcon,
-  Payment as PaymentIcon,
-  History as HistoryIcon,
-  Info as InfoIcon,
-  Receipt as DueListIcon,
-  CalendarMonth as MonthwiseIcon,
+  Laptop as LaptopIcon,
+  Videocam as CameraIcon,
+  BatteryChargingFull as InverterIcon,
+  Group as PeopleIcon,
+  TrendingUp as TrendingUpIcon,
 } from '@mui/icons-material'
 
 export default function Dashboard() {
   const navigate = useNavigate()
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }, [])
+  const [counts, setCounts] = useState<{ laptop: number; camera: number; inverter: number }>({ laptop: 0, camera: 0, inverter: 0 })
+  const [totals, setTotals] = useState<{ laptop: number; camera: number; inverter: number }>({ laptop: 0, camera: 0, inverter: 0 })
+  const [loading, setLoading] = useState(false)
 
   async function logout(e?: MouseEvent) {
     e?.preventDefault()
@@ -39,181 +41,163 @@ export default function Dashboard() {
     navigate('/')
   }
 
+  useEffect(() => {
+    if (!supabase) return
+    ;(async () => {
+      try {
+        setLoading(true)
+        // Counts
+        const [lr, cr, ir] = await Promise.all([
+          supabase.from('laptop_registrations').select('*', { count: 'exact', head: true }),
+          supabase.from('camera_registrations').select('*', { count: 'exact', head: true }),
+          supabase.from('inverter_registrations').select('*', { count: 'exact', head: true }),
+        ])
+        setCounts({
+          laptop: lr.count ?? 0,
+          camera: cr.count ?? 0,
+          inverter: ir.count ?? 0,
+        })
+
+        // Totals
+        const [lp, cp, ip] = await Promise.all([
+          supabase.from('laptop_payments').select('amount'),
+          supabase.from('camera_payments').select('amount'),
+          supabase.from('inverter_payments').select('amount'),
+        ])
+        const sum = (rows?: any[] | null) => (rows || []).reduce((s, r) => s + Number(r.amount || 0), 0)
+        setTotals({
+          laptop: sum(lp.data as any[]),
+          camera: sum(cp.data as any[]),
+          inverter: sum(ip.data as any[]),
+        })
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [])
+
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      <AppBar position="sticky" color="primary" enableColorOnDark>
+    <Box sx={{ position: 'relative', minHeight: '100vh', bgcolor: 'background.default' }}>
+      {/* Background transparent logo */}
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: 'url(/logo.jpeg)',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
+          backgroundSize: 'min(60vw, 420px)',
+          opacity: 0.06,
+          pointerEvents: 'none',
+        }}
+      />
+      <AppBar position="sticky" enableColorOnDark sx={{ bgcolor: '#800000', color: '#FDF6E3', boxShadow: '0 4px 20px rgba(128,0,0,0.25)' }}>
         <Toolbar sx={{ gap: 2 }}>
-          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>
-            Dashboard
+          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 800, letterSpacing: 0.3 }}>
+            Admin Dashboard
           </Typography>
-          <Button color="inherit" onClick={logout} startIcon={<LogoutIcon />}>Logout</Button>
+          <Button onClick={logout} startIcon={<LogoutIcon />} sx={{ color: '#FDF6E3' }}>Logout</Button>
         </Toolbar>
+        {loading && <LinearProgress color="inherit" />}
       </AppBar>
 
-      <Container sx={{ py: { xs: 4, md: 6 } }}>
-        <Grid container spacing={3}>
+      <Container sx={{ py: { xs: 6, md: 10 }, position: 'relative' }}>
+        {/* Hero header */}
+        <Paper elevation={3} sx={{ p: { xs: 2, md: 3 }, mb: 3, borderRadius: 3, background: 'linear-gradient(135deg, rgba(128,0,0,0.95) 0%, rgba(128,0,0,0.85) 60%, rgba(91,0,0,0.9) 100%)', color: '#FDF6E3', overflow: 'hidden', position: 'relative' }}>
+          <Box sx={{ position: 'absolute', inset: 0, opacity: 0.05, backgroundImage: 'url(/vite.svg)', backgroundRepeat: 'no-repeat', backgroundPosition: 'right -40px bottom -40px', backgroundSize: '300px' }} />
+          <Stack direction={{ xs: 'column', md: 'row' }} alignItems={{ xs: 'flex-start', md: 'center' }} justifyContent="space-between" spacing={2}>
+            <Stack spacing={0.5}>
+              <Typography variant="h5" sx={{ fontWeight: 900, letterSpacing: 0.4 }}>Welcome back</Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>Overview of your categories at a glance</Typography>
+            </Stack>
+            <Chip icon={<TrendingUpIcon sx={{ color: '#800000' }} />} label="Live Overview" sx={{ bgcolor: '#FDF6E3', color: '#800000', fontWeight: 700 }} />
+          </Stack>
+        </Paper>
+
+        {/* Stats row */}
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={4}>
+            <Paper elevation={3} sx={{ p: 2.5, textAlign: 'center', borderRadius: 3, border: '2px solid #EEDC82', background: 'linear-gradient(135deg, #FFF8E7 0%, #FDF6E3 100%)' }}>
+              <Stack spacing={1} alignItems="center">
+                <Avatar sx={{ bgcolor: '#800000' }}><PeopleIcon sx={{ color: '#FDF6E3' }} /></Avatar>
+                <Typography variant="overline" sx={{ letterSpacing: 1 }}>Laptop Customers</Typography>
+                <Typography variant="h4" sx={{ fontWeight: 900 }}>{counts.laptop.toLocaleString('en-IN')}</Typography>
+              </Stack>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <Paper elevation={3} sx={{ p: 2.5, textAlign: 'center', borderRadius: 3, border: '2px solid #EEDC82', background: 'linear-gradient(135deg, #FFF8E7 0%, #FDF6E3 100%)' }}>
+              <Stack spacing={1} alignItems="center">
+                <Avatar sx={{ bgcolor: '#800000' }}><PeopleIcon sx={{ color: '#FDF6E3' }} /></Avatar>
+                <Typography variant="overline" sx={{ letterSpacing: 1 }}>Camera Customers</Typography>
+                <Typography variant="h4" sx={{ fontWeight: 900 }}>{counts.camera.toLocaleString('en-IN')}</Typography>
+              </Stack>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <Paper elevation={3} sx={{ p: 2.5, textAlign: 'center', borderRadius: 3, border: '2px solid #EEDC82', background: 'linear-gradient(135deg, #FFF8E7 0%, #FDF6E3 100%)' }}>
+              <Stack spacing={1} alignItems="center">
+                <Avatar sx={{ bgcolor: '#800000' }}><PeopleIcon sx={{ color: '#FDF6E3' }} /></Avatar>
+                <Typography variant="overline" sx={{ letterSpacing: 1 }}>Inverter Customers</Typography>
+                <Typography variant="h4" sx={{ fontWeight: 900 }}>{counts.inverter.toLocaleString('en-IN')}</Typography>
+              </Stack>
+            </Paper>
+          </Grid>
+        </Grid>
+
+        {/* Money collected big numbers */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} md={4}>
+            <Paper elevation={3} sx={{ p: 3, textAlign: 'center', borderRadius: 3, border: '2px solid #EEDC82', background: 'linear-gradient(135deg, #FFF8E7 0%, #FDF6E3 100%)' }}>
+              <Typography variant="overline" sx={{ letterSpacing: 1 }}>Laptop Collected</Typography>
+              <Typography variant="h3" sx={{ fontWeight: 900, color: '#800000' }}>₹{Math.round(totals.laptop).toLocaleString('en-IN')}</Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Paper elevation={3} sx={{ p: 3, textAlign: 'center', borderRadius: 3, border: '2px solid #EEDC82', background: 'linear-gradient(135deg, #FFF8E7 0%, #FDF6E3 100%)' }}>
+              <Typography variant="overline" sx={{ letterSpacing: 1 }}>Camera Collected</Typography>
+              <Typography variant="h3" sx={{ fontWeight: 900, color: '#800000' }}>₹{Math.round(totals.camera).toLocaleString('en-IN')}</Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Paper elevation={3} sx={{ p: 3, textAlign: 'center', borderRadius: 3, border: '2px solid #EEDC82', background: 'linear-gradient(135deg, #FFF8E7 0%, #FDF6E3 100%)' }}>
+              <Typography variant="overline" sx={{ letterSpacing: 1 }}>Inverter Collected</Typography>
+              <Typography variant="h3" sx={{ fontWeight: 900, color: '#800000' }}>₹{Math.round(totals.inverter).toLocaleString('en-IN')}</Typography>
+            </Paper>
+          </Grid>
+        </Grid>
+
+        <Grid container spacing={3} justifyContent="center">
           <Grid item xs={12} md={8}>
             <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
-                <Card 
-                  elevation={2}
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    '&:hover': {
-                      bgcolor: '#f5f5dc',
-                      '& .MuiTypography-root': {
-                        color: '#8b4513',
-                      },
-                      '& .MuiButton-root': {
-                        color: '#8b4513',
-                      }
-                    }
-                  }}
-                >
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Registration</Typography>
-                    <Typography color="text.secondary">Add and manage customer registrations.</Typography>
-                  </CardContent>
-                  <CardActions>
-                    <Button component={RouterLink} to="/register" variant="contained" startIcon={<RegisterIcon />}>Open</Button>
-                  </CardActions>
+              <Grid item xs={12} sm={4}>
+                <Card elevation={3} sx={{ p: 2.5, textAlign: 'center', borderRadius: 3, border: '2px solid #EEDC82', background: 'linear-gradient(135deg, #FFF8E7 0%, #FDF6E3 100%)', transition: 'transform .2s ease', '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 24px rgba(0,0,0,0.08)' } }}>
+                  <Stack spacing={2} alignItems="center">
+                    <Avatar sx={{ bgcolor: '#800000' }}><LaptopIcon sx={{ color: '#FDF6E3' }} /></Avatar>
+                    <Typography variant="h6" sx={{ fontWeight: 800 }}>Laptop</Typography>
+                    <Button fullWidth component={RouterLink} to="/laptop" variant="contained" sx={{ bgcolor: '#800000', color: '#FDF6E3', '&:hover': { bgcolor: '#5B0000' } }}>Open</Button>
+                  </Stack>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <Card 
-                  elevation={2}
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    '&:hover': {
-                      bgcolor: '#f5f5dc',
-                      '& .MuiTypography-root': {
-                        color: '#8b4513',
-                      },
-                      '& .MuiButton-root': {
-                        color: '#8b4513',
-                      }
-                    }
-                  }}
-                >
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Payment</Typography>
-                    <Typography color="text.secondary">Record and track customer payments.</Typography>
-                  </CardContent>
-                  <CardActions>
-                    <Button component={RouterLink} to="/payment" variant="contained" color="secondary" startIcon={<PaymentIcon />}>Open</Button>
-                  </CardActions>
+              <Grid item xs={12} sm={4}>
+                <Card elevation={3} sx={{ p: 2.5, textAlign: 'center', borderRadius: 3, border: '2px solid #EEDC82', background: 'linear-gradient(135deg, #FFF8E7 0%, #FDF6E3 100%)', transition: 'transform .2s ease', '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 24px rgba(0,0,0,0.08)' } }}>
+                  <Stack spacing={2} alignItems="center">
+                    <Avatar sx={{ bgcolor: '#800000' }}><CameraIcon sx={{ color: '#FDF6E3' }} /></Avatar>
+                    <Typography variant="h6" sx={{ fontWeight: 800 }}>Camera</Typography>
+                    <Button fullWidth component={RouterLink} to="/camera" variant="contained" sx={{ bgcolor: '#800000', color: '#FDF6E3', '&:hover': { bgcolor: '#5B0000' } }}>Open</Button>
+                  </Stack>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <Card 
-                  elevation={2}
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    '&:hover': {
-                      bgcolor: '#f5f5dc',
-                      '& .MuiTypography-root': {
-                        color: '#8b4513',
-                      },
-                      '& .MuiButton-root': {
-                        color: '#8b4513',
-                      }
-                    }
-                  }}
-                >
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Due List</Typography>
-                    <Typography color="text.secondary">View customer dues and payment history.</Typography>
-                  </CardContent>
-                  <CardActions>
-                    <Button component={RouterLink} to="/due-list" variant="contained" color="primary" startIcon={<DueListIcon />}>Open</Button>
-                  </CardActions>
-                </Card>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Card 
-                  elevation={2}
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    '&:hover': {
-                      bgcolor: '#f5f5dc',
-                      '& .MuiTypography-root': {
-                        color: '#8b4513',
-                      },
-                      '& .MuiButton-root': {
-                        color: '#8b4513',
-                      }
-                    }
-                  }}
-                >
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Monthwise Due</Typography>
-                    <Typography color="text.secondary">View paid and unpaid customers for specific months.</Typography>
-                  </CardContent>
-                  <CardActions>
-                    <Button component={RouterLink} to="/monthwise-due" variant="contained" color="secondary" startIcon={<MonthwiseIcon />}>Open</Button>
-                  </CardActions>
-                </Card>
-              </Grid>
-              <Grid item xs={12}>
-                <Card 
-                  elevation={2}
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    '&:hover': {
-                      bgcolor: '#f5f5dc',
-                      '& .MuiTypography-root': {
-                        color: '#8b4513',
-                      },
-                      '& .MuiButton-root': {
-                        color: '#8b4513',
-                      }
-                    }
-                  }}
-                >
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Lucky Draw History</Typography>
-                    <Typography color="text.secondary">View previous winners and draw activity.</Typography>
-                  </CardContent>
-                  <CardActions>
-                    <Button component={RouterLink} to="/lucky-draw" variant="outlined" startIcon={<HistoryIcon />}>Open</Button>
-                  </CardActions>
+              <Grid item xs={12} sm={4}>
+                <Card elevation={3} sx={{ p: 2.5, textAlign: 'center', borderRadius: 3, border: '2px solid #EEDC82', background: 'linear-gradient(135deg, #FFF8E7 0%, #FDF6E3 100%)', transition: 'transform .2s ease', '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 24px rgba(0,0,0,0.08)' } }}>
+                  <Stack spacing={2} alignItems="center">
+                    <Avatar sx={{ bgcolor: '#800000' }}><InverterIcon sx={{ color: '#FDF6E3' }} /></Avatar>
+                    <Typography variant="h6" sx={{ fontWeight: 800 }}>Inverter</Typography>
+                    <Button fullWidth component={RouterLink} to="/inverter" variant="contained" sx={{ bgcolor: '#800000', color: '#FDF6E3', '&:hover': { bgcolor: '#5B0000' } }}>Open</Button>
+                  </Stack>
                 </Card>
               </Grid>
             </Grid>
-          </Grid>
-
-          <Grid item xs={12} md={4}>
-            <Paper elevation={2} sx={{ p: 2 }}>
-              <Stack spacing={1}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <InfoIcon color="primary" />
-                  <Typography variant="h6">About S K Enterprises</Typography>
-                </Stack>
-                <Typography variant="body2" color="text.secondary">
-                  One Stop IT Accessories Shop — desktops, laptops, printers, CCTV, networking, fiber optics, EPABX intercom, GPS vehicle tracker, biometrics, and inverter services.
-                </Typography>
-                <Divider sx={{ my: 1 }} />
-                <Stack direction="row" spacing={1} flexWrap="wrap">
-                  <Chip label="Sales & Service" color="primary" variant="outlined" />
-                  <Chip label="Aland" variant="outlined" />
-                  <Chip label="Satyam Complex" variant="outlined" />
-                </Stack>
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-                  <Button fullWidth href="tel:9972749555" variant="contained">Call 9972749555</Button>
-                  <Button fullWidth href="https://google.com/maps?q=17.5657074,76.5688519&z=17&hl=en" target="_blank" rel="noreferrer" variant="outlined">Directions</Button>
-                </Stack>
-              </Stack>
-            </Paper>
           </Grid>
         </Grid>
       </Container>

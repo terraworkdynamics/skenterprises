@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../utils/supabase'
+import { useParams } from 'react-router-dom'
 
 type LuckyRow = {
   id: string
@@ -11,6 +12,12 @@ type LuckyRow = {
 }
 
 export default function LuckyDraw() {
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }, [])
+  const { category } = useParams()
+  const resolvedCategory = useMemo(() => {
+    const c = (category || '').toLowerCase()
+    return c === 'laptop' || c === 'camera' || c === 'inverter' ? c : null
+  }, [category])
   const [rows, setRows] = useState<LuckyRow[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -28,23 +35,26 @@ export default function LuckyDraw() {
 
   useEffect(() => {
     async function load() {
+      const table = resolvedCategory ? `${resolvedCategory}_lucky_draws` : 'lucky_draws'
+      const regTable = resolvedCategory ? `${resolvedCategory}_registrations` : 'registrations'
       const { data, error } = await supabase
-        .from('lucky_draws')
-        .select('id, registration_id, prize, created_at, winner_month, registrations(name, phone)')
+        .from(table)
+        .select(`id, registration_id, prize, created_at, winner_month, ${regTable}!inner(name, phone)`) // join alias
         .order('created_at', { ascending: false })
       if (error) setError(error.message)
       else setRows((data as unknown as LuckyRow[]) || [])
     }
     load()
-  }, [])
+  }, [resolvedCategory])
 
   async function searchByName() {
     setError(null)
     setSelectedReg(null)
     setSearchResults([])
     if (!supabase) { setError('Missing Supabase configuration'); return }
+    const table = resolvedCategory ? `${resolvedCategory}_registrations` : 'registrations'
     const { data, error } = await supabase
-      .from('registrations')
+      .from(table)
       .select('id, name, phone')
       .ilike('name', `%${queryName}%`)
       .limit(50)
@@ -57,7 +67,8 @@ export default function LuckyDraw() {
     if (!selectedReg) { setError('Please select a registration'); return }
     setLoading(true)
     const payload: any = { registration_id: selectedReg.id, prize: prize || null, winner_month: winnerMonth }
-    const { error } = await supabase.from('lucky_draws').insert(payload)
+    const table = resolvedCategory ? `${resolvedCategory}_lucky_draws` : 'lucky_draws'
+    const { error } = await supabase.from(table).insert(payload)
     setLoading(false)
     if (error) {
       setError(error.message)
@@ -68,30 +79,31 @@ export default function LuckyDraw() {
     setSearchResults([])
     setSelectedReg(null)
     setPrize('')
+    const regTable = resolvedCategory ? `${resolvedCategory}_registrations` : 'registrations'
     const { data } = await supabase
-      .from('lucky_draws')
-      .select('id, registration_id, prize, created_at, winner_month, registrations(name, phone)')
+      .from(table)
+      .select(`id, registration_id, prize, created_at, winner_month, ${regTable}!inner(name, phone)`) 
       .order('created_at', { ascending: false })
     if (data) setRows((data as unknown as LuckyRow[]) || [])
   }
 
   return (
     <div style={{ maxWidth: 900, margin: '40px auto', padding: 16 }}>
-      <h2>Lucky Winners</h2>
+      <h2>{resolvedCategory ? `${resolvedCategory.charAt(0).toUpperCase()}${resolvedCategory.slice(1)} ` : ''}Lucky Winners</h2>
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       {/* Entry section */}
       <div style={{ marginTop: 16, padding: 20, border: '2px solid #3b82f6', borderRadius: 12, background: '#eff6ff', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
         <h3 style={{ marginTop: 0, color: '#1e40af', fontSize: '1.25rem', fontWeight: 'bold' }}>🎉 Enter Monthly Winner</h3>
         <div style={{ display: 'grid', gap: 12, gridTemplateColumns: '1fr', alignItems: 'center' }}>
-          <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '200px 1fr 120px' }}>
+          <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
             <select value={winnerMonth} onChange={(e) => setWinnerMonth(e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1' }}>
               {months.map((m) => (
                 <option key={m} value={m}>{m}</option>
               ))}
             </select>
             <input value={queryName} onChange={(e) => setQueryName(e.target.value)} placeholder="Search by name" style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1' }} />
-            <button onClick={searchByName} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: 'white', fontWeight: 600 }}>Search</button>
+            <button onClick={searchByName} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: 'white', fontWeight: 600, width: '100%' }}>Search</button>
           </div>
           {searchResults.length > 0 && (
             <div style={{ overflowX: 'auto' }}>
@@ -131,12 +143,12 @@ export default function LuckyDraw() {
         </div>
       </div>
 
-      <div style={{ marginTop: 24 }}>
+      <div style={{ marginTop: 24, overflowX: 'auto' }}>
         <h3 style={{ marginTop: 0 }}>Lucky Draw History</h3>
         {rows.length === 0 ? (
           <p>No entries yet</p>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', minWidth: 520, borderCollapse: 'collapse' }}>
             <thead>
               <tr>
                 <th style={{ textAlign: 'left', borderBottom: '1px solid #e5e7eb', padding: 8 }}>Date</th>

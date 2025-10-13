@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../utils/supabase'
+import { useParams } from 'react-router-dom'
 import {
   Box,
   Container,
@@ -39,6 +40,12 @@ type PaymentRow = {
 }
 
 export default function Payment() {
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }, [])
+  const { category } = useParams()
+  const resolvedCategory = useMemo(() => {
+    const c = (category || '').toLowerCase()
+    return c === 'laptop' || c === 'camera' || c === 'inverter' ? c : null
+  }, [category])
   const [queryName, setQueryName] = useState('')
   const [queryCard, setQueryCard] = useState('')
   const [queryPhone, setQueryPhone] = useState('')
@@ -62,9 +69,10 @@ export default function Payment() {
       return
     }
 
+    const registrationsTable = resolvedCategory ? `${resolvedCategory}_registrations` : 'registrations'
     if (type === 'name') {
       const { data, error } = await supabase
-        .from('registrations')
+        .from(registrationsTable)
         .select('*')
         .ilike('name', `%${queryName}%`)
         .limit(50)
@@ -80,7 +88,7 @@ export default function Payment() {
       }
     } else if (type === 'card_no') {
       const { data, error } = await supabase
-        .from('registrations')
+        .from(registrationsTable)
         .select('*')
         .eq('card_no', queryCard)
         .maybeSingle()
@@ -88,7 +96,7 @@ export default function Payment() {
       else setResult(data as Registration | null)
     } else {
       const { data, error } = await supabase
-        .from('registrations')
+        .from(registrationsTable)
         .select('*')
         .eq('phone', queryPhone)
         .maybeSingle()
@@ -100,8 +108,9 @@ export default function Payment() {
   useEffect(() => {
     if (!result) return
     ;(async () => {
+      const paymentsTable = resolvedCategory ? `${resolvedCategory}_payments` : 'payments'
       const { data, error } = await supabase
-        .from('payments')
+        .from(paymentsTable)
         .select('*')
         .eq('registration_id', result.id)
         .order('created_at', { ascending: true })
@@ -141,8 +150,9 @@ export default function Payment() {
       transaction_id: method === 'UPI' ? transactionId || null : null,
     }
 
+    const paymentsTable = resolvedCategory ? `${resolvedCategory}_payments` : 'payments'
     const { data: inserted, error } = await supabase
-      .from('payments')
+      .from(paymentsTable)
       .insert(payload)
       .select('*')
       .maybeSingle()
@@ -155,7 +165,7 @@ export default function Payment() {
       setTransactionId('')
       // refresh list
       const { data } = await supabase
-        .from('payments')
+        .from(paymentsTable)
         .select('*')
         .eq('registration_id', result.id)
         .order('created_at', { ascending: true })
@@ -163,7 +173,7 @@ export default function Payment() {
       // print receipt
       if (inserted) {
         try {
-          generateHtmlSlip(result, inserted as PaymentRow, 'General')
+          generateHtmlSlip(result, inserted as PaymentRow, resolvedCategory ? resolvedCategory : 'General')
         } catch (e) {
           console.error('Slip print failed', e)
         }
@@ -393,8 +403,8 @@ export default function Payment() {
               )}
             </Paper>
 
-            <Paper elevation={2} sx={{ p: 0 }}>
-              <Table size="small">
+            <Paper elevation={2} sx={{ p: 0, overflowX: 'auto' }}>
+              <Table size="small" sx={{ minWidth: 560 }}>
                 <TableHead>
                   <TableRow>
                     <TableCell sx={{ fontWeight: 700 }}>Sl. No.</TableCell>
@@ -402,6 +412,7 @@ export default function Payment() {
                     <TableCell sx={{ fontWeight: 700 }}>Amount</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Method</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Transaction ID</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }} align="right">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -414,11 +425,16 @@ export default function Payment() {
                       </TableCell>
                       <TableCell>{p.displayMode}</TableCell>
                       <TableCell>{p.displayTxn}</TableCell>
+                      <TableCell align="right">
+                        <Button size="small" variant="outlined" onClick={() => generateHtmlSlip(result!, p, resolvedCategory ? resolvedCategory : 'General')}>
+                          Reprint
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                   {formattedPayments.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5}>
+                      <TableCell colSpan={6}>
                         <Typography
                           align="center"
                           color="text.secondary"

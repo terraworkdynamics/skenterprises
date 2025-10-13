@@ -163,7 +163,7 @@ export default function Payment() {
       // print receipt
       if (inserted) {
         try {
-          generateHtmlSlip(result, inserted as PaymentRow)
+          generateHtmlSlip(result, inserted as PaymentRow, 'General')
         } catch (e) {
           console.error('Slip print failed', e)
         }
@@ -172,7 +172,7 @@ export default function Payment() {
   }
 
   // --- Dual Receipt Print Function ---
-  function generateHtmlSlip(reg: Registration, pay: PaymentRow) {
+  function generateHtmlSlip(reg: Registration, pay: PaymentRow, category?: string) {
     const now = new Date(pay.created_at || Date.now());
     const dateStr = now.toLocaleDateString('en-IN');
     const amount = Number(pay.amount).toFixed(2);
@@ -200,8 +200,9 @@ export default function Payment() {
         .map(
           () => `
         <div class="receipt">
-          <div class="header">SK Enterprise</div>
-          <div class="sub-header">Serikar Complex, Umarga Road – ALAND</div>
+          <div class="header">S K Enterprises</div>
+          <div class="sub-header">Aland chakrikata, Near Devi Temple, Syndicate Bank opposite main road, Road Aland - 585302, Dist. Kalburagi</div>
+          ${category ? `<div class="category-header" style="text-align: center; font-weight: bold; font-size: 1.1em; margin: 10px 0; color: #1976d2;">${category.toUpperCase()} SERVICES</div>` : ''}
           <div class="details">
             <div class="line"><strong>Date:</strong> ${dateStr}</div>
             <div class="line"><strong>Card No:</strong> ${reg.card_no || '—'}</div>

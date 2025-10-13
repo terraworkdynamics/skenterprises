@@ -26,9 +26,10 @@ import {
   Info as InfoIcon,
   Receipt as DueListIcon,
   CalendarMonth as MonthwiseIcon,
+  Videocam as CameraIcon,
 } from '@mui/icons-material'
 
-export default function Dashboard() {
+export default function Camera() {
   const navigate = useNavigate()
 
   async function logout(e?: MouseEvent) {
@@ -43,8 +44,9 @@ export default function Dashboard() {
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       <AppBar position="sticky" color="primary" enableColorOnDark>
         <Toolbar sx={{ gap: 2 }}>
+          <CameraIcon sx={{ mr: 1 }} />
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>
-            Dashboard
+            Camera Services
           </Typography>
           <Button color="inherit" onClick={logout} startIcon={<LogoutIcon />}>Logout</Button>
         </Toolbar>
@@ -73,11 +75,11 @@ export default function Dashboard() {
                   }}
                 >
                   <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Registration</Typography>
-                    <Typography color="text.secondary">Add and manage customer registrations.</Typography>
+                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Camera Registration</Typography>
+                    <Typography color="text.secondary">Add and manage camera customer registrations.</Typography>
                   </CardContent>
                   <CardActions>
-                    <Button component={RouterLink} to="/register" variant="contained" startIcon={<RegisterIcon />}>Open</Button>
+                    <Button component={RouterLink} to="/camera/register" variant="contained" startIcon={<RegisterIcon />}>Open</Button>
                   </CardActions>
                 </Card>
               </Grid>
@@ -100,11 +102,11 @@ export default function Dashboard() {
                   }}
                 >
                   <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Payment</Typography>
-                    <Typography color="text.secondary">Record and track customer payments.</Typography>
+                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Camera Payment</Typography>
+                    <Typography color="text.secondary">Record and track camera customer payments.</Typography>
                   </CardContent>
                   <CardActions>
-                    <Button component={RouterLink} to="/payment" variant="contained" color="secondary" startIcon={<PaymentIcon />}>Open</Button>
+                    <Button component={RouterLink} to="/camera/payment" variant="contained" color="secondary" startIcon={<PaymentIcon />}>Open</Button>
                   </CardActions>
                 </Card>
               </Grid>
@@ -127,11 +129,11 @@ export default function Dashboard() {
                   }}
                 >
                   <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Due List</Typography>
-                    <Typography color="text.secondary">View customer dues and payment history.</Typography>
+                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Camera Due List</Typography>
+                    <Typography color="text.secondary">View camera customer dues and payment history.</Typography>
                   </CardContent>
                   <CardActions>
-                    <Button component={RouterLink} to="/due-list" variant="contained" color="primary" startIcon={<DueListIcon />}>Open</Button>
+                    <Button component={RouterLink} to="/camera/due-list" variant="contained" color="primary" startIcon={<DueListIcon />}>Open</Button>
                   </CardActions>
                 </Card>
               </Grid>
@@ -154,11 +156,11 @@ export default function Dashboard() {
                   }}
                 >
                   <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Monthwise Due</Typography>
-                    <Typography color="text.secondary">View paid and unpaid customers for specific months.</Typography>
+                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Camera Monthwise Due</Typography>
+                    <Typography color="text.secondary">View paid and unpaid camera customers for specific months.</Typography>
                   </CardContent>
                   <CardActions>
-                    <Button component={RouterLink} to="/monthwise-due" variant="contained" color="secondary" startIcon={<MonthwiseIcon />}>Open</Button>
+                    <Button component={RouterLink} to="/camera/monthwise-due" variant="contained" color="secondary" startIcon={<MonthwiseIcon />}>Open</Button>
                   </CardActions>
                 </Card>
               </Grid>
@@ -181,11 +183,11 @@ export default function Dashboard() {
                   }}
                 >
                   <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Lucky Draw History</Typography>
-                    <Typography color="text.secondary">View previous winners and draw activity.</Typography>
+                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Camera Lucky Draw History</Typography>
+                    <Typography color="text.secondary">View previous camera winners and draw activity.</Typography>
                   </CardContent>
                   <CardActions>
-                    <Button component={RouterLink} to="/lucky-draw" variant="outlined" startIcon={<HistoryIcon />}>Open</Button>
+                    <Button component={RouterLink} to="/camera/lucky-draw" variant="outlined" startIcon={<HistoryIcon />}>Open</Button>
                   </CardActions>
                 </Card>
               </Grid>
@@ -196,17 +198,18 @@ export default function Dashboard() {
             <Paper elevation={2} sx={{ p: 2 }}>
               <Stack spacing={1}>
                 <Stack direction="row" alignItems="center" spacing={1}>
-                  <InfoIcon color="primary" />
-                  <Typography variant="h6">About S K Enterprises</Typography>
+                  <CameraIcon color="primary" />
+                  <Typography variant="h6">Camera Services</Typography>
                 </Stack>
                 <Typography variant="body2" color="text.secondary">
-                  One Stop IT Accessories Shop — desktops, laptops, printers, CCTV, networking, fiber optics, EPABX intercom, GPS vehicle tracker, biometrics, and inverter services.
+                  Complete CCTV and camera solutions — security cameras, surveillance systems, IP cameras, DVR/NVR systems, installation, and maintenance services.
                 </Typography>
                 <Divider sx={{ my: 1 }} />
                 <Stack direction="row" spacing={1} flexWrap="wrap">
-                  <Chip label="Sales & Service" color="primary" variant="outlined" />
-                  <Chip label="Aland" variant="outlined" />
-                  <Chip label="Satyam Complex" variant="outlined" />
+                  <Chip label="CCTV Systems" color="primary" variant="outlined" />
+                  <Chip label="IP Cameras" variant="outlined" />
+                  <Chip label="DVR/NVR" variant="outlined" />
+                  <Chip label="Installation" variant="outlined" />
                 </Stack>
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
                   <Button fullWidth href="tel:9972749555" variant="contained">Call 9972749555</Button>

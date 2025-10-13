@@ -23,12 +23,12 @@ import {
   PersonAdd as RegisterIcon,
   Payment as PaymentIcon,
   History as HistoryIcon,
-  Info as InfoIcon,
   Receipt as DueListIcon,
   CalendarMonth as MonthwiseIcon,
+  Laptop as LaptopIcon,
 } from '@mui/icons-material'
 
-export default function Dashboard() {
+export default function Laptop() {
   const navigate = useNavigate()
 
   async function logout(e?: MouseEvent) {
@@ -43,8 +43,9 @@ export default function Dashboard() {
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       <AppBar position="sticky" color="primary" enableColorOnDark>
         <Toolbar sx={{ gap: 2 }}>
+          <LaptopIcon sx={{ mr: 1 }} />
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>
-            Dashboard
+            Laptop Services
           </Typography>
           <Button color="inherit" onClick={logout} startIcon={<LogoutIcon />}>Logout</Button>
         </Toolbar>
@@ -73,11 +74,11 @@ export default function Dashboard() {
                   }}
                 >
                   <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Registration</Typography>
-                    <Typography color="text.secondary">Add and manage customer registrations.</Typography>
+                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Laptop Registration</Typography>
+                    <Typography color="text.secondary">Add and manage laptop customer registrations.</Typography>
                   </CardContent>
                   <CardActions>
-                    <Button component={RouterLink} to="/register" variant="contained" startIcon={<RegisterIcon />}>Open</Button>
+                    <Button component={RouterLink} to="/laptop/register" variant="contained" startIcon={<RegisterIcon />}>Open</Button>
                   </CardActions>
                 </Card>
               </Grid>
@@ -100,11 +101,11 @@ export default function Dashboard() {
                   }}
                 >
                   <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Payment</Typography>
-                    <Typography color="text.secondary">Record and track customer payments.</Typography>
+                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Laptop Payment</Typography>
+                    <Typography color="text.secondary">Record and track laptop customer payments.</Typography>
                   </CardContent>
                   <CardActions>
-                    <Button component={RouterLink} to="/payment" variant="contained" color="secondary" startIcon={<PaymentIcon />}>Open</Button>
+                    <Button component={RouterLink} to="/laptop/payment" variant="contained" color="secondary" startIcon={<PaymentIcon />}>Open</Button>
                   </CardActions>
                 </Card>
               </Grid>
@@ -127,11 +128,11 @@ export default function Dashboard() {
                   }}
                 >
                   <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Due List</Typography>
-                    <Typography color="text.secondary">View customer dues and payment history.</Typography>
+                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Laptop Due List</Typography>
+                    <Typography color="text.secondary">View laptop customer dues and payment history.</Typography>
                   </CardContent>
                   <CardActions>
-                    <Button component={RouterLink} to="/due-list" variant="contained" color="primary" startIcon={<DueListIcon />}>Open</Button>
+                    <Button component={RouterLink} to="/laptop/due-list" variant="contained" color="primary" startIcon={<DueListIcon />}>Open</Button>
                   </CardActions>
                 </Card>
               </Grid>
@@ -154,11 +155,11 @@ export default function Dashboard() {
                   }}
                 >
                   <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Monthwise Due</Typography>
-                    <Typography color="text.secondary">View paid and unpaid customers for specific months.</Typography>
+                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Laptop Monthwise Due</Typography>
+                    <Typography color="text.secondary">View paid and unpaid laptop customers for specific months.</Typography>
                   </CardContent>
                   <CardActions>
-                    <Button component={RouterLink} to="/monthwise-due" variant="contained" color="secondary" startIcon={<MonthwiseIcon />}>Open</Button>
+                    <Button component={RouterLink} to="/laptop/monthwise-due" variant="contained" color="secondary" startIcon={<MonthwiseIcon />}>Open</Button>
                   </CardActions>
                 </Card>
               </Grid>
@@ -181,11 +182,11 @@ export default function Dashboard() {
                   }}
                 >
                   <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Lucky Draw History</Typography>
-                    <Typography color="text.secondary">View previous winners and draw activity.</Typography>
+                    <Typography variant="h6" gutterBottom sx={{ minHeight: '1.5em' }}>Laptop Lucky Draw History</Typography>
+                    <Typography color="text.secondary">View previous laptop winners and draw activity.</Typography>
                   </CardContent>
                   <CardActions>
-                    <Button component={RouterLink} to="/lucky-draw" variant="outlined" startIcon={<HistoryIcon />}>Open</Button>
+                    <Button component={RouterLink} to="/laptop/lucky-draw" variant="outlined" startIcon={<HistoryIcon />}>Open</Button>
                   </CardActions>
                 </Card>
               </Grid>
@@ -196,17 +197,18 @@ export default function Dashboard() {
             <Paper elevation={2} sx={{ p: 2 }}>
               <Stack spacing={1}>
                 <Stack direction="row" alignItems="center" spacing={1}>
-                  <InfoIcon color="primary" />
-                  <Typography variant="h6">About S K Enterprises</Typography>
+                  <LaptopIcon color="primary" />
+                  <Typography variant="h6">Laptop Services</Typography>
                 </Stack>
                 <Typography variant="body2" color="text.secondary">
-                  One Stop IT Accessories Shop — desktops, laptops, printers, CCTV, networking, fiber optics, EPABX intercom, GPS vehicle tracker, biometrics, and inverter services.
+                  Comprehensive laptop sales, service, and support — from high-performance gaming laptops to business workstations, repairs, upgrades, and maintenance services.
                 </Typography>
                 <Divider sx={{ my: 1 }} />
                 <Stack direction="row" spacing={1} flexWrap="wrap">
-                  <Chip label="Sales & Service" color="primary" variant="outlined" />
-                  <Chip label="Aland" variant="outlined" />
-                  <Chip label="Satyam Complex" variant="outlined" />
+                  <Chip label="Laptop Sales" color="primary" variant="outlined" />
+                  <Chip label="Repairs & Service" variant="outlined" />
+                  <Chip label="Upgrades" variant="outlined" />
+                  <Chip label="Warranty Support" variant="outlined" />
                 </Stack>
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
                   <Button fullWidth href="tel:9972749555" variant="contained">Call 9972749555</Button>

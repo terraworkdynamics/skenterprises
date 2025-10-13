@@ -20,6 +20,9 @@ import Payment from './pages/Payment'
 import LuckyDraw from './pages/LuckyDraw'
 import DueList from './pages/DueList'
 import MonthwiseDue from './pages/MonthwiseDue'
+import Laptop from './pages/Laptop'
+import Inverter from './pages/Inverter'
+import Camera from './pages/Camera'
 
 const router = createBrowserRouter([
   { path: '/', element: <Home /> },
@@ -30,6 +33,9 @@ const router = createBrowserRouter([
   { path: '/lucky-draw', element: <LuckyDraw /> },
   { path: '/due-list', element: <DueList /> },
   { path: '/monthwise-due', element: <MonthwiseDue /> },
+  { path: '/laptop', element: <Laptop /> },
+  { path: '/inverter', element: <Inverter /> },
+  { path: '/camera', element: <Camera /> },
 ])
 
 const theme = createTheme({

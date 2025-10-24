@@ -5,9 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "cross-env NODE_ENV=production tsc && vite build",
+    "build": "cross-env NODE_ENV=production tsc && vite build --mode production",
+    "build:dev": "cross-env NODE_ENV=development tsc && vite build --mode development",
     "preview": "vite preview --strictPort --host 127.0.0.1",
-    "create-admin": "node --env-file=.env.server scripts/create-admin.mjs"
+    "preview:prod": "vite preview --strictPort --host 0.0.0.0 --port 4173",
+    "create-admin": "node --env-file=.env.server scripts/create-admin.mjs",
+    "security:audit": "npm audit --audit-level=moderate",
+    "security:fix": "npm audit fix",
+    "build:analyze": "npm run build && npx vite-bundle-analyzer dist",
+    "deploy:check": "npm run security:audit && npm run build",
+    "start": "npm run preview:prod"
   },
   "devDependencies": {
     "@types/react": "^19.2.2",

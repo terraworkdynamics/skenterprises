@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../utils/supabase'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import {
   Box,
   Container,
@@ -28,6 +28,7 @@ import {
   Search as SearchIcon,
   Visibility as ViewIcon,
   Close as CloseIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material'
 
 type Registration = {
@@ -45,7 +46,8 @@ type Payment = {
   created_at: string
   method?: string
   transaction_id?: string
-  card_no?: string // ✅ added this line for linking with registration
+  card_no?: string
+  registration_id?: string
 }
 
 type CustomerDue = {
@@ -83,6 +85,7 @@ const DUE_SCHEDULE = [
 
 export default function DueList() {
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }, [])
+  const navigate = useNavigate()
   const { category } = useParams()
   const resolvedCategory = useMemo(() => {
     const c = (category || '').toLowerCase()
@@ -149,7 +152,7 @@ export default function DueList() {
   const customerDues = useMemo(() => {
     return customers.map(customer => {
       const customerPayments = payments.filter(
-        p => p.card_no && p.card_no === customer.card_no // ✅ replaced registration_id
+        p => p.registration_id === customer.id || (p.card_no && p.card_no === customer.card_no)
       )
       const totalPaid = customerPayments.reduce((sum, payment) => sum + payment.amount, 0)
       const totalDue = DUE_SCHEDULE.reduce((sum, due) => sum + due.amount, 0)
@@ -248,9 +251,19 @@ export default function DueList() {
         }}
       />
       <Container sx={{ py: { xs: 4, md: 6 }, position: 'relative' }}>
-        <Typography variant="h4" sx={{ fontWeight: 800, mb: 2 }}>
-          {resolvedCategory ? `${resolvedCategory.charAt(0).toUpperCase()}${resolvedCategory.slice(1)} ` : ''}Due List
-        </Typography>
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate(-1)}
+            variant="outlined"
+            size="small"
+          >
+            Back
+          </Button>
+          <Typography variant="h4" sx={{ fontWeight: 800 }}>
+            {resolvedCategory ? `${resolvedCategory.charAt(0).toUpperCase()}${resolvedCategory.slice(1)} ` : ''}Due List
+          </Typography>
+        </Stack>
 
         {error && (
           <Alert sx={{ mb: 3 }} severity="error" onClose={() => setError(null)}>
@@ -459,7 +472,10 @@ export default function DueList() {
                   <Typography variant="h6" gutterBottom>
                     Payment History
                   </Typography>
-                  {payments.filter(p => p.card_no === selectedCustomer.customer.card_no).length > 0 ? ( // ✅ fixed filter
+                  {payments.filter(p => 
+                    p.registration_id === selectedCustomer.customer.id || 
+                    (p.card_no && p.card_no === selectedCustomer.customer.card_no)
+                  ).length > 0 ? (
                     <Table size="small">
                       <TableHead>
                         <TableRow>
@@ -471,7 +487,10 @@ export default function DueList() {
                       </TableHead>
                       <TableBody>
                         {payments
-                          .filter(p => p.card_no === selectedCustomer.customer.card_no)
+                          .filter(p => 
+                            p.registration_id === selectedCustomer.customer.id || 
+                            (p.card_no && p.card_no === selectedCustomer.customer.card_no)
+                          )
                           .map((payment, index) => (
                             <TableRow key={payment.id || index}>
                               <TableCell>

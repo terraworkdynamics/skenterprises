@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../utils/supabase';
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import Grid from '@mui/material/GridLegacy'
 import {
   Box,
@@ -37,6 +37,8 @@ import {
   Visibility as ViewIcon,
   Close as CloseIcon,
   CalendarMonth as CalendarIcon,
+  Refresh as RefreshIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material'
 
 type Registration = {
@@ -55,6 +57,7 @@ type Payment = {
   method?: string
   transaction_id?: string
   card_no?: string
+  registration_id?: string
 }
 
 type CustomerDue = {
@@ -62,6 +65,7 @@ type CustomerDue = {
   totalDue: number
   paidAmount: number
   remainingDue: number
+  totalAmountCollectedTillMonth: number
   dueDetails: Array<{
     month: string
     dueDate: string
@@ -92,6 +96,7 @@ const DUE_SCHEDULE = [
 
 export default function MonthwiseDue() {
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }, [])
+  const navigate = useNavigate()
   const { category } = useParams()
   const resolvedCategory = useMemo(() => {
     const c = (category || '').toLowerCase()
@@ -105,55 +110,65 @@ export default function MonthwiseDue() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
 
   // Fetch all customers and payments
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!supabase) {
-        setError('Missing Supabase configuration')
-        setLoading(false)
+  const fetchData = async (showRefreshLoading = false) => {
+    if (!supabase) {
+      setError('Missing Supabase configuration')
+      setLoading(false)
+      return
+    }
+
+    try {
+      if (showRefreshLoading) {
+        setRefreshing(true)
+      } else {
+        setLoading(true)
+      }
+      
+      // Fetch all customers
+      const registrationsTable = resolvedCategory ? `${resolvedCategory}_registrations` : 'registrations'
+      const { data: customersData, error: customersError } = await supabase
+        .from(registrationsTable)
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (customersError) {
+        setError(customersError.message)
         return
       }
 
-      try {
-        setLoading(true)
-        
-        // Fetch all customers
-        const registrationsTable = resolvedCategory ? `${resolvedCategory}_registrations` : 'registrations'
-        const { data: customersData, error: customersError } = await supabase
-          .from(registrationsTable)
-          .select('*')
-          .order('created_at', { ascending: false })
+      // Fetch all payments
+      const paymentsTable = resolvedCategory ? `${resolvedCategory}_payments` : 'payments'
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from(paymentsTable)
+        .select('*')
+        .order('created_at', { ascending: true })
 
-        if (customersError) {
-          setError(customersError.message)
-          return
-        }
-
-        // Fetch all payments
-        const paymentsTable = resolvedCategory ? `${resolvedCategory}_payments` : 'payments'
-        const { data: paymentsData, error: paymentsError } = await supabase
-          .from(paymentsTable)
-          .select('*')
-          .order('created_at', { ascending: true })
-
-        if (paymentsError) {
-          setError(paymentsError.message)
-          return
-        }
-
-        setCustomers(customersData || [])
-        setPayments(paymentsData || [])
-      } catch (err) {
-        setError('Failed to fetch data')
-        console.error(err)
-      } finally {
-        setLoading(false)
+      if (paymentsError) {
+        setError(paymentsError.message)
+        return
       }
-    }
 
+      setCustomers(customersData || [])
+      setPayments(paymentsData || [])
+    } catch (err) {
+      setError('Failed to fetch data')
+      console.error(err)
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }
+
+  useEffect(() => {
     fetchData()
   }, [resolvedCategory])
+
+  const handleRefresh = () => {
+    fetchData(true)
+  }
 
   // Calculate customer dues for the selected month
   const monthwiseData = useMemo(() => {
@@ -166,19 +181,26 @@ export default function MonthwiseDue() {
     const unpaidCustomers: CustomerDue[] = []
 
     customers.forEach(customer => {
+      // Fix: Match payments by registration_id instead of card_no
       const customerPayments = payments.filter(
-        p => p.card_no && p.card_no === customer.card_no
+        p => p.registration_id === customer.id || (p.card_no && p.card_no === customer.card_no)
       )
+      
       const totalPaid = customerPayments.reduce((sum, payment) => sum + payment.amount, 0)
       const totalDue = DUE_SCHEDULE.reduce((sum, due) => sum + due.amount, 0)
-      const remainingDue = totalDue - totalPaid
-
-      // Calculate due details for each month
-      const dueDetails = DUE_SCHEDULE.map(schedule => {
+      
+      // Calculate which months are paid based on cumulative payments
+      let cumulativePaid = 0
+      const dueDetails = DUE_SCHEDULE.map((schedule) => {
         const dueDate = new Date(schedule.dueDate.split('-').reverse().join('-'))
         const today = new Date()
         const isOverdue = dueDate < today
-        const isPaid = totalPaid >= schedule.amount
+        
+        // Check if this month is paid by comparing cumulative paid amount
+        const isPaid = cumulativePaid + schedule.amount <= totalPaid
+        if (isPaid) {
+          cumulativePaid += schedule.amount
+        }
 
         let status: 'paid' | 'pending' | 'overdue' = 'pending'
         if (isPaid) {
@@ -195,16 +217,48 @@ export default function MonthwiseDue() {
         }
       })
 
+
+      // Calculate remaining due for the selected month specifically
+      const selectedMonthDetail = dueDetails.find(detail => detail.month === selectedMonth)
+      let selectedMonthRemainingDue = 0
+      let totalAmountCollectedTillMonth = 0
+      
+      if (selectedMonthDetail) {
+        if (selectedMonthDetail.status === 'paid') {
+          selectedMonthRemainingDue = 0 // Fully paid
+        } else {
+          // Calculate how much of this month's 2500 is still unpaid
+          // Find which month this is in the schedule (0-based index)
+          const monthIndex = DUE_SCHEDULE.findIndex(schedule => schedule.month === selectedMonth)
+          const amountPaidForPreviousMonths = monthIndex * selectedSchedule.amount
+          const amountPaidForThisMonth = Math.max(0, Math.min(selectedSchedule.amount, totalPaid - amountPaidForPreviousMonths))
+          selectedMonthRemainingDue = selectedSchedule.amount - amountPaidForThisMonth
+        }
+      } else {
+        selectedMonthRemainingDue = selectedSchedule.amount
+      }
+
+      // Calculate total amount collected till the selected month
+      const selectedMonthIndex = DUE_SCHEDULE.findIndex(schedule => schedule.month === selectedMonth)
+      if (selectedMonthIndex !== -1) {
+        // Amount collected till the selected month (including partial payment for selected month)
+        const monthsTillSelected = selectedMonthIndex + 1
+        const expectedAmountTillMonth = monthsTillSelected * selectedSchedule.amount
+        totalAmountCollectedTillMonth = Math.min(totalPaid, expectedAmountTillMonth)
+      } else {
+        totalAmountCollectedTillMonth = totalPaid
+      }
+
       const customerDue: CustomerDue = {
         customer,
         totalDue,
         paidAmount: totalPaid,
-        remainingDue,
+        remainingDue: selectedMonthRemainingDue, // Show remaining due for selected month only
+        totalAmountCollectedTillMonth,
         dueDetails
       }
 
       // Check if customer has paid for the selected month
-      const selectedMonthDetail = dueDetails.find(detail => detail.month === selectedMonth)
       if (selectedMonthDetail && selectedMonthDetail.status === 'paid') {
         paidCustomers.push(customerDue)
       } else {
@@ -287,9 +341,30 @@ export default function MonthwiseDue() {
         }}
       />
       <Container sx={{ py: { xs: 4, md: 6 }, position: 'relative' }}>
-        <Typography variant="h4" sx={{ fontWeight: 800, mb: 2 }}>
-          {resolvedCategory ? `${resolvedCategory.charAt(0).toUpperCase()}${resolvedCategory.slice(1)} ` : ''}Monthwise Due
-        </Typography>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Button
+              startIcon={<ArrowBackIcon />}
+              onClick={() => navigate(-1)}
+              variant="outlined"
+              size="small"
+            >
+              Back
+            </Button>
+            <Typography variant="h4" sx={{ fontWeight: 800 }}>
+              {resolvedCategory ? `${resolvedCategory.charAt(0).toUpperCase()}${resolvedCategory.slice(1)} ` : ''}Monthwise Due
+            </Typography>
+          </Stack>
+          <Button
+            variant="outlined"
+            startIcon={refreshing ? <CircularProgress size={16} /> : <RefreshIcon />}
+            onClick={handleRefresh}
+            disabled={refreshing}
+            size="small"
+          >
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
+        </Stack>
 
         {error && (
           <Alert sx={{ mb: 3 }} severity="error" onClose={() => setError(null)}>
@@ -384,7 +459,7 @@ export default function MonthwiseDue() {
                     <TableCell sx={{ fontWeight: 700 }}>Card No</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Phone</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Total Paid</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Remaining Due</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Remaining Due ({selectedMonth})</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Actions</TableCell>
                   </TableRow>
@@ -459,9 +534,9 @@ export default function MonthwiseDue() {
                     <TableCell sx={{ fontWeight: 700 }}>Customer Name</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Card No</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Phone</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Total Due</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Total Amount Collected</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Paid Amount</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Remaining Due</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Remaining Due ({selectedMonth})</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Actions</TableCell>
                   </TableRow>
@@ -481,7 +556,7 @@ export default function MonthwiseDue() {
                       <TableCell>{due.customer.phone}</TableCell>
                       <TableCell>
                         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                          ₹{due.totalDue.toFixed(2)}
+                          ₹{due.totalAmountCollectedTillMonth.toFixed(2)}
                         </Typography>
                       </TableCell>
                       <TableCell>
@@ -585,19 +660,19 @@ export default function MonthwiseDue() {
                 {/* Due Summary */}
                 <Paper elevation={1} sx={{ p: 2, bgcolor: 'grey.50' }}>
                   <Typography variant="h6" gutterBottom>
-                    Due Summary
+                    Due Summary for {selectedMonth}
                   </Typography>
                   <Stack direction="row" spacing={4}>
                     <Box>
-                      <Typography variant="body2" color="text.secondary">Total Due</Typography>
-                      <Typography variant="h6">₹{selectedCustomer.totalDue.toFixed(2)}</Typography>
+                      <Typography variant="body2" color="text.secondary">Total Amount Collected</Typography>
+                      <Typography variant="h6" color="success.main">₹{selectedCustomer.totalAmountCollectedTillMonth.toFixed(2)}</Typography>
                     </Box>
                     <Box>
                       <Typography variant="body2" color="text.secondary">Paid Amount</Typography>
                       <Typography variant="h6" color="success.main">₹{selectedCustomer.paidAmount.toFixed(2)}</Typography>
                     </Box>
                     <Box>
-                      <Typography variant="body2" color="text.secondary">Remaining Due</Typography>
+                      <Typography variant="body2" color="text.secondary">Remaining Due ({selectedMonth})</Typography>
                       <Typography 
                         variant="h6" 
                         color={selectedCustomer.remainingDue > 0 ? 'error.main' : 'success.main'}
@@ -646,7 +721,10 @@ export default function MonthwiseDue() {
                   <Typography variant="h6" gutterBottom>
                     Payment History
                   </Typography>
-                  {payments.filter(p => p.card_no === selectedCustomer.customer.card_no).length > 0 ? (
+                  {payments.filter(p => 
+                    p.registration_id === selectedCustomer.customer.id || 
+                    (p.card_no && p.card_no === selectedCustomer.customer.card_no)
+                  ).length > 0 ? (
                     <Table size="small">
                       <TableHead>
                         <TableRow>
@@ -658,7 +736,10 @@ export default function MonthwiseDue() {
                       </TableHead>
                       <TableBody>
                         {payments
-                          .filter(p => p.card_no === selectedCustomer.customer.card_no)
+                          .filter(p => 
+                            p.registration_id === selectedCustomer.customer.id || 
+                            (p.card_no && p.card_no === selectedCustomer.customer.card_no)
+                          )
                           .map((payment, index) => (
                             <TableRow key={payment.id || index}>
                               <TableCell>

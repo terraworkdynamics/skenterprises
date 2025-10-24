@@ -23,25 +23,145 @@ import MonthwiseDue from './pages/MonthwiseDue'
 import Laptop from './pages/Laptop'
 import Inverter from './pages/Inverter'
 import Camera from './pages/Camera'
+import TestAuth from './pages/TestAuth'
+import ProtectedRoute from './components/ProtectedRoute'
+import AuthGuard from './components/AuthGuard'
 
 const router = createBrowserRouter([
-  { path: '/', element: <Home /> },
-  { path: '/login', element: <Login /> },
-  { path: '/dashboard', element: <Dashboard /> },
-  { path: '/register', element: <Register /> },
-  { path: '/payment', element: <Payment /> },
-  { path: '/lucky-draw', element: <LuckyDraw /> },
-  { path: '/due-list', element: <DueList /> },
-  { path: '/monthwise-due', element: <MonthwiseDue /> },
-  { path: '/laptop', element: <Laptop /> },
-  { path: '/inverter', element: <Inverter /> },
-  { path: '/camera', element: <Camera /> },
+  { 
+    path: '/', 
+    element: (
+      <AuthGuard>
+        <Home />
+      </AuthGuard>
+    ) 
+  },
+  { 
+    path: '/login', 
+    element: (
+      <AuthGuard>
+        <Login />
+      </AuthGuard>
+    ) 
+  },
+  { 
+    path: '/dashboard', 
+    element: (
+      <ProtectedRoute>
+        <Dashboard />
+      </ProtectedRoute>
+    ) 
+  },
+  { 
+    path: '/register', 
+    element: (
+      <ProtectedRoute>
+        <Register />
+      </ProtectedRoute>
+    ) 
+  },
+  { 
+    path: '/payment', 
+    element: (
+      <ProtectedRoute>
+        <Payment />
+      </ProtectedRoute>
+    ) 
+  },
+  { 
+    path: '/lucky-draw', 
+    element: (
+      <ProtectedRoute>
+        <LuckyDraw />
+      </ProtectedRoute>
+    ) 
+  },
+  { 
+    path: '/due-list', 
+    element: (
+      <ProtectedRoute>
+        <DueList />
+      </ProtectedRoute>
+    ) 
+  },
+  { 
+    path: '/monthwise-due', 
+    element: (
+      <ProtectedRoute>
+        <MonthwiseDue />
+      </ProtectedRoute>
+    ) 
+  },
+  { 
+    path: '/laptop', 
+    element: (
+      <ProtectedRoute>
+        <Laptop />
+      </ProtectedRoute>
+    ) 
+  },
+  { 
+    path: '/inverter', 
+    element: (
+      <ProtectedRoute>
+        <Inverter />
+      </ProtectedRoute>
+    ) 
+  },
+  { 
+    path: '/camera', 
+    element: (
+      <ProtectedRoute>
+        <Camera />
+      </ProtectedRoute>
+    ) 
+  },
   // Category-scoped routes
-  { path: '/:category/register', element: <Register /> },
-  { path: '/:category/payment', element: <Payment /> },
-  { path: '/:category/due-list', element: <DueList /> },
-  { path: '/:category/monthwise-due', element: <MonthwiseDue /> },
-  { path: '/:category/lucky-draw', element: <LuckyDraw /> },
+  { 
+    path: '/:category/register', 
+    element: (
+      <ProtectedRoute>
+        <Register />
+      </ProtectedRoute>
+    ) 
+  },
+  { 
+    path: '/:category/payment', 
+    element: (
+      <ProtectedRoute>
+        <Payment />
+      </ProtectedRoute>
+    ) 
+  },
+  { 
+    path: '/:category/due-list', 
+    element: (
+      <ProtectedRoute>
+        <DueList />
+      </ProtectedRoute>
+    ) 
+  },
+  { 
+    path: '/:category/monthwise-due', 
+    element: (
+      <ProtectedRoute>
+        <MonthwiseDue />
+      </ProtectedRoute>
+    ) 
+  },
+  { 
+    path: '/:category/lucky-draw', 
+    element: (
+      <ProtectedRoute>
+        <LuckyDraw />
+      </ProtectedRoute>
+    ) 
+  },
+  // Test route (remove in production)
+  { 
+    path: '/test-auth', 
+    element: <TestAuth />
+  },
 ])
 
 const theme = createTheme({

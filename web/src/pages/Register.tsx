@@ -1,6 +1,6 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../utils/supabase'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import {
   Box,
   Container,
@@ -26,10 +26,12 @@ import {
   CreditCard as CardIcon,
   Home as AddressIcon,
   CheckCircle as SuccessIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material'
 
 export default function Register() {
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }, [])
+  const navigate = useNavigate()
   const { category } = useParams()
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -119,6 +121,17 @@ export default function Register() {
       />
 
       <Container sx={{ py: { xs: 4, md: 6 }, position: 'relative' }}>
+        <Box sx={{ position: 'absolute', top: 20, left: 20, zIndex: 1000 }}>
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate(-1)}
+            variant="outlined"
+            size="small"
+            sx={{ bgcolor: 'rgba(255,255,255,0.9)' }}
+          >
+            Back
+          </Button>
+        </Box>
         <Fade in timeout={800}>
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
             <Slide in timeout={800} direction="up">

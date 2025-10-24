@@ -1,7 +1,7 @@
 import { type MouseEvent, useEffect, useState } from 'react'
 import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import { supabase } from '../utils/supabase'
-
+import { authManager } from '../utils/auth'
 import {
   AppBar,
   Toolbar,
@@ -15,6 +15,8 @@ import {
   Avatar,
   Chip,
   LinearProgress,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material'
 import Grid from '@mui/material/GridLegacy'
 import {
@@ -28,6 +30,9 @@ import {
 
 export default function Dashboard() {
   const navigate = useNavigate()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }, [])
   const [counts, setCounts] = useState<{ laptop: number; camera: number; inverter: number }>({ laptop: 0, camera: 0, inverter: 0 })
   const [totals, setTotals] = useState<{ laptop: number; camera: number; inverter: number }>({ laptop: 0, camera: 0, inverter: 0 })
@@ -35,9 +40,7 @@ export default function Dashboard() {
 
   async function logout(e?: MouseEvent) {
     e?.preventDefault()
-    if (supabase) {
-      await supabase.auth.signOut()
-    }
+    await authManager.signOut()
     navigate('/')
   }
 
@@ -93,10 +96,27 @@ export default function Dashboard() {
       />
       <AppBar position="sticky" enableColorOnDark sx={{ bgcolor: '#800000', color: '#FDF6E3', boxShadow: '0 4px 20px rgba(128,0,0,0.25)' }}>
         <Toolbar sx={{ gap: 2 }}>
-          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 800, letterSpacing: 0.3 }}>
+          <Typography 
+            variant={isMobile ? "subtitle1" : "h6"} 
+            sx={{ 
+              flexGrow: 1, 
+              fontWeight: 800, 
+              letterSpacing: 0.3,
+              fontSize: isMobile ? '1rem' : '1.25rem'
+            }}
+          >
             Admin Dashboard
           </Typography>
-          <Button onClick={logout} startIcon={<LogoutIcon />} sx={{ color: '#FDF6E3' }}>Logout</Button>
+          <Button 
+            onClick={logout} 
+            startIcon={<LogoutIcon />} 
+            sx={{ 
+              color: '#FDF6E3',
+              fontSize: isMobile ? '0.875rem' : '1rem'
+            }}
+          >
+            {isMobile ? 'Logout' : 'Logout'}
+          </Button>
         </Toolbar>
         {loading && <LinearProgress color="inherit" />}
       </AppBar>
@@ -115,31 +135,79 @@ export default function Dashboard() {
         </Paper>
 
         {/* Stats row */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={4}>
-            <Paper elevation={3} sx={{ p: 2.5, textAlign: 'center', borderRadius: 3, border: '2px solid #EEDC82', background: 'linear-gradient(135deg, #FFF8E7 0%, #FDF6E3 100%)' }}>
+            <Paper elevation={3} sx={{ 
+              p: { xs: 2, sm: 2.5 }, 
+              textAlign: 'center', 
+              borderRadius: 3, 
+              border: '2px solid #EEDC82', 
+              background: 'linear-gradient(135deg, #FFF8E7 0%, #FDF6E3 100%)' 
+            }}>
               <Stack spacing={1} alignItems="center">
-                <Avatar sx={{ bgcolor: '#800000' }}><PeopleIcon sx={{ color: '#FDF6E3' }} /></Avatar>
-                <Typography variant="overline" sx={{ letterSpacing: 1 }}>Laptop Customers</Typography>
-                <Typography variant="h4" sx={{ fontWeight: 900 }}>{counts.laptop.toLocaleString('en-IN')}</Typography>
+                <Avatar sx={{ 
+                  bgcolor: '#800000',
+                  width: { xs: 40, sm: 48 },
+                  height: { xs: 40, sm: 48 }
+                }}>
+                  <PeopleIcon sx={{ color: '#FDF6E3', fontSize: { xs: 20, sm: 24 } }} />
+                </Avatar>
+                <Typography variant="overline" sx={{ letterSpacing: 1, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                  Laptop Customers
+                </Typography>
+                <Typography variant={isMobile ? "h5" : "h4"} sx={{ fontWeight: 900 }}>
+                  {counts.laptop.toLocaleString('en-IN')}
+                </Typography>
               </Stack>
             </Paper>
           </Grid>
           <Grid item xs={12} sm={4}>
-            <Paper elevation={3} sx={{ p: 2.5, textAlign: 'center', borderRadius: 3, border: '2px solid #EEDC82', background: 'linear-gradient(135deg, #FFF8E7 0%, #FDF6E3 100%)' }}>
+            <Paper elevation={3} sx={{ 
+              p: { xs: 2, sm: 2.5 }, 
+              textAlign: 'center', 
+              borderRadius: 3, 
+              border: '2px solid #EEDC82', 
+              background: 'linear-gradient(135deg, #FFF8E7 0%, #FDF6E3 100%)' 
+            }}>
               <Stack spacing={1} alignItems="center">
-                <Avatar sx={{ bgcolor: '#800000' }}><PeopleIcon sx={{ color: '#FDF6E3' }} /></Avatar>
-                <Typography variant="overline" sx={{ letterSpacing: 1 }}>Camera Customers</Typography>
-                <Typography variant="h4" sx={{ fontWeight: 900 }}>{counts.camera.toLocaleString('en-IN')}</Typography>
+                <Avatar sx={{ 
+                  bgcolor: '#800000',
+                  width: { xs: 40, sm: 48 },
+                  height: { xs: 40, sm: 48 }
+                }}>
+                  <PeopleIcon sx={{ color: '#FDF6E3', fontSize: { xs: 20, sm: 24 } }} />
+                </Avatar>
+                <Typography variant="overline" sx={{ letterSpacing: 1, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                  Camera Customers
+                </Typography>
+                <Typography variant={isMobile ? "h5" : "h4"} sx={{ fontWeight: 900 }}>
+                  {counts.camera.toLocaleString('en-IN')}
+                </Typography>
               </Stack>
             </Paper>
           </Grid>
           <Grid item xs={12} sm={4}>
-            <Paper elevation={3} sx={{ p: 2.5, textAlign: 'center', borderRadius: 3, border: '2px solid #EEDC82', background: 'linear-gradient(135deg, #FFF8E7 0%, #FDF6E3 100%)' }}>
+            <Paper elevation={3} sx={{ 
+              p: { xs: 2, sm: 2.5 }, 
+              textAlign: 'center', 
+              borderRadius: 3, 
+              border: '2px solid #EEDC82', 
+              background: 'linear-gradient(135deg, #FFF8E7 0%, #FDF6E3 100%)' 
+            }}>
               <Stack spacing={1} alignItems="center">
-                <Avatar sx={{ bgcolor: '#800000' }}><PeopleIcon sx={{ color: '#FDF6E3' }} /></Avatar>
-                <Typography variant="overline" sx={{ letterSpacing: 1 }}>Inverter Customers</Typography>
-                <Typography variant="h4" sx={{ fontWeight: 900 }}>{counts.inverter.toLocaleString('en-IN')}</Typography>
+                <Avatar sx={{ 
+                  bgcolor: '#800000',
+                  width: { xs: 40, sm: 48 },
+                  height: { xs: 40, sm: 48 }
+                }}>
+                  <PeopleIcon sx={{ color: '#FDF6E3', fontSize: { xs: 20, sm: 24 } }} />
+                </Avatar>
+                <Typography variant="overline" sx={{ letterSpacing: 1, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                  Inverter Customers
+                </Typography>
+                <Typography variant={isMobile ? "h5" : "h4"} sx={{ fontWeight: 900 }}>
+                  {counts.inverter.toLocaleString('en-IN')}
+                </Typography>
               </Stack>
             </Paper>
           </Grid>

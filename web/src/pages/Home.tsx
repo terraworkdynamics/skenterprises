@@ -1,5 +1,5 @@
 import { Link as RouterLink } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import {
   AppBar,
   Toolbar,
@@ -13,7 +13,14 @@ import {
   Chip,
   Avatar,
   IconButton,
-  Link,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material'
 import Grid from '@mui/material/GridLegacy'
 import {
@@ -30,6 +37,8 @@ import {
   AccountCircle as AccountIcon,
   Star as StarIcon,
   CheckCircle as CheckIcon,
+  Menu as MenuIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material'
 
 // Rotating Balls Component
@@ -122,10 +131,89 @@ function ServiceCard({
   )
 }
 
+// Mobile Navigation Drawer Component
+function MobileNavigation({ open, onClose }: { open: boolean; onClose: () => void }) {
+  return (
+    <Drawer
+      anchor="right"
+      open={open}
+      onClose={onClose}
+      sx={{
+        '& .MuiDrawer-paper': {
+          width: 280,
+          bgcolor: '#800000',
+          color: '#FDF6E3',
+        },
+      }}
+    >
+      <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          S K Enterprises
+        </Typography>
+        <IconButton onClick={onClose} sx={{ color: '#FDF6E3' }}>
+          <CloseIcon />
+        </IconButton>
+      </Box>
+      <List>
+        <ListItem disablePadding>
+          <ListItemButton 
+            component={RouterLink} 
+            to="/login"
+            onClick={onClose}
+            sx={{ 
+              '&:hover': { bgcolor: 'rgba(253, 246, 227, 0.1)' }
+            }}
+          >
+            <ListItemIcon sx={{ color: '#FDF6E3' }}>
+              <AccountIcon />
+            </ListItemIcon>
+            <ListItemText primary="Admin Login" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton 
+            component="a" 
+            href="#services"
+            onClick={onClose}
+            sx={{ 
+              '&:hover': { bgcolor: 'rgba(253, 246, 227, 0.1)' }
+            }}
+          >
+            <ListItemIcon sx={{ color: '#FDF6E3' }}>
+              <ComputerIcon />
+            </ListItemIcon>
+            <ListItemText primary="Our Services" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton 
+            component="a" 
+            href="tel:9972749555"
+            onClick={onClose}
+            sx={{ 
+              '&:hover': { bgcolor: 'rgba(253, 246, 227, 0.1)' }
+            }}
+          >
+            <ListItemIcon sx={{ color: '#FDF6E3' }}>
+              <CallIcon />
+            </ListItemIcon>
+            <ListItemText primary="Call: 9972749555" />
+          </ListItemButton>
+        </ListItem>
+      </List>
+    </Drawer>
+  )
+}
+
 export default function Home() {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [])
+  
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Navigation Bar */}
@@ -137,24 +225,47 @@ export default function Home() {
         }}
       >
         <Toolbar sx={{ gap: 2 }}>
-          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700, color: '#FDF6E3' }}>
+          <Typography 
+            variant={isMobile ? "subtitle1" : "h6"} 
+            sx={{ 
+              flexGrow: 1, 
+              fontWeight: 700, 
+              color: '#FDF6E3',
+              fontSize: isMobile ? '1rem' : '1.25rem'
+            }}
+          >
             S K Enterprises
           </Typography>
-          <Button 
-            component={RouterLink} 
-            to="/login" 
-            sx={{ 
-              color: '#FDF6E3',
-              '&:hover': {
-                bgcolor: 'rgba(253, 246, 227, 0.1)',
-              }
-            }} 
-            startIcon={<AccountIcon />}
-          >
-            Admin Login
-          </Button>
+          {isMobile ? (
+            <IconButton 
+              onClick={() => setMobileMenuOpen(true)}
+              sx={{ color: '#FDF6E3' }}
+            >
+              <MenuIcon />
+            </IconButton>
+          ) : (
+            <Button 
+              component={RouterLink} 
+              to="/login" 
+              sx={{ 
+                color: '#FDF6E3',
+                '&:hover': {
+                  bgcolor: 'rgba(253, 246, 227, 0.1)',
+                }
+              }} 
+              startIcon={<AccountIcon />}
+            >
+              Admin Login
+            </Button>
+          )}
         </Toolbar>
       </AppBar>
+
+      {/* Mobile Navigation Drawer */}
+      <MobileNavigation 
+        open={mobileMenuOpen} 
+        onClose={() => setMobileMenuOpen(false)} 
+      />
 
       {/* Hero Section */}
       <Box 
@@ -721,10 +832,7 @@ export default function Home() {
           <Box sx={{ borderTop: '1px solid #800000', mt: 4, pt: 4, textAlign: 'center' }}>
             <Typography variant="body2" sx={{ opacity: 0.8 }}>
               © {new Date().getFullYear()} S K Enterprises • One Stop IT Accessories Shop • 
-              Quality • Reliability • Service • Built by{' '}
-              <Link href="https://terradigitalizedynamics.com/" target="_blank" rel="noreferrer" underline="hover" sx={{ color: '#D4AF37', fontWeight: 700 }}>
-                TerraDigitalize Dynamics
-              </Link>
+              Quality • Reliability • Service
           </Typography>
           </Box>
         </Container>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../utils/supabase'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 
 type LuckyRow = {
   id: string
@@ -8,11 +8,16 @@ type LuckyRow = {
   prize: string | null
   created_at: string
   winner_month?: string | null
-  registrations?: { name: string; phone: string }
+  registrations?: { name: string; phone: string; card_no: string }
+  laptop_registrations?: { name: string; phone: string; card_no: string }
+  inverter_registrations?: { name: string; phone: string; card_no: string }
+  camera_registrations?: { name: string; phone: string; card_no: string }
+  [key: string]: any // Allow dynamic table names
 }
 
 export default function LuckyDraw() {
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }, [])
+  const navigate = useNavigate()
   const { category } = useParams()
   const resolvedCategory = useMemo(() => {
     const c = (category || '').toLowerCase()
@@ -29,8 +34,9 @@ export default function LuckyDraw() {
   const defaultMonth = useMemo(() => months[new Date().getMonth()], [months])
   const [winnerMonth, setWinnerMonth] = useState<string>(defaultMonth)
   const [queryName, setQueryName] = useState('')
-  const [searchResults, setSearchResults] = useState<Array<{ id: string; name: string; phone: string }>>([])
-  const [selectedReg, setSelectedReg] = useState<{ id: string; name: string; phone: string } | null>(null)
+  const [queryCardNo, setQueryCardNo] = useState('')
+  const [searchResults, setSearchResults] = useState<Array<{ id: string; name: string; phone: string; card_no: string }>>([])
+  const [selectedReg, setSelectedReg] = useState<{ id: string; name: string; phone: string; card_no: string } | null>(null)
   const [prize, setPrize] = useState('')
 
   useEffect(() => {
@@ -39,7 +45,7 @@ export default function LuckyDraw() {
       const regTable = resolvedCategory ? `${resolvedCategory}_registrations` : 'registrations'
       const { data, error } = await supabase
         .from(table)
-        .select(`id, registration_id, prize, created_at, winner_month, ${regTable}!inner(name, phone)`) // join alias
+        .select(`id, registration_id, prize, created_at, winner_month, ${regTable}!inner(name, phone, card_no)`) // explicit inner join
         .order('created_at', { ascending: false })
       if (error) setError(error.message)
       else setRows((data as unknown as LuckyRow[]) || [])
@@ -55,8 +61,23 @@ export default function LuckyDraw() {
     const table = resolvedCategory ? `${resolvedCategory}_registrations` : 'registrations'
     const { data, error } = await supabase
       .from(table)
-      .select('id, name, phone')
+      .select('id, name, phone, card_no')
       .ilike('name', `%${queryName}%`)
+      .limit(50)
+    if (error) setError(error.message)
+    else setSearchResults((data as any[]) || [])
+  }
+
+  async function searchByCardNo() {
+    setError(null)
+    setSelectedReg(null)
+    setSearchResults([])
+    if (!supabase) { setError('Missing Supabase configuration'); return }
+    const table = resolvedCategory ? `${resolvedCategory}_registrations` : 'registrations'
+    const { data, error } = await supabase
+      .from(table)
+      .select('id, name, phone, card_no')
+      .ilike('card_no', `%${queryCardNo}%`)
       .limit(50)
     if (error) setError(error.message)
     else setSearchResults((data as any[]) || [])
@@ -82,14 +103,32 @@ export default function LuckyDraw() {
     const regTable = resolvedCategory ? `${resolvedCategory}_registrations` : 'registrations'
     const { data } = await supabase
       .from(table)
-      .select(`id, registration_id, prize, created_at, winner_month, ${regTable}!inner(name, phone)`) 
+      .select(`id, registration_id, prize, created_at, winner_month, ${regTable}!inner(name, phone, card_no)`) 
       .order('created_at', { ascending: false })
     if (data) setRows((data as unknown as LuckyRow[]) || [])
   }
 
   return (
     <div style={{ maxWidth: 900, margin: '40px auto', padding: 16 }}>
-      <h2>{resolvedCategory ? `${resolvedCategory.charAt(0).toUpperCase()}${resolvedCategory.slice(1)} ` : ''}Lucky Winners</h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+        <button 
+          onClick={() => navigate(-1)}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '8px',
+            border: '1px solid #ccc',
+            background: 'white',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '14px'
+          }}
+        >
+          ← Back
+        </button>
+        <h2 style={{ margin: 0 }}>{resolvedCategory ? `${resolvedCategory.charAt(0).toUpperCase()}${resolvedCategory.slice(1)} ` : ''}Lucky Winners</h2>
+      </div>
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       {/* Entry section */}
@@ -103,7 +142,11 @@ export default function LuckyDraw() {
               ))}
             </select>
             <input value={queryName} onChange={(e) => setQueryName(e.target.value)} placeholder="Search by name" style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1' }} />
-            <button onClick={searchByName} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: 'white', fontWeight: 600, width: '100%' }}>Search</button>
+            <button onClick={searchByName} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: 'white', fontWeight: 600, width: '100%' }}>Search by Name</button>
+          </div>
+          <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+            <input value={queryCardNo} onChange={(e) => setQueryCardNo(e.target.value)} placeholder="Search by card number" style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1' }} />
+            <button onClick={searchByCardNo} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #10b981', background: '#10b981', color: 'white', fontWeight: 600, width: '100%' }}>Search by Card</button>
           </div>
           {searchResults.length > 0 && (
             <div style={{ overflowX: 'auto' }}>
@@ -112,6 +155,7 @@ export default function LuckyDraw() {
                   <tr>
                     <th style={{ textAlign: 'left', borderBottom: '1px solid #e5e7eb', padding: 8 }}>Name</th>
                     <th style={{ textAlign: 'left', borderBottom: '1px solid #e5e7eb', padding: 8 }}>Phone</th>
+                    <th style={{ textAlign: 'left', borderBottom: '1px solid #e5e7eb', padding: 8 }}>Card Number</th>
                     <th style={{ textAlign: 'right', borderBottom: '1px solid #e5e7eb', padding: 8 }}>Action</th>
                   </tr>
                 </thead>
@@ -120,6 +164,7 @@ export default function LuckyDraw() {
                     <tr key={r.id}>
                       <td style={{ padding: 8 }}>{r.name}</td>
                       <td style={{ padding: 8 }}>{r.phone}</td>
+                      <td style={{ padding: 8 }}>{r.card_no}</td>
                       <td style={{ padding: 8, textAlign: 'right' }}>
                         <button onClick={() => setSelectedReg(r)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #64748b', background: selectedReg?.id === r.id ? '#64748b' : 'white', color: selectedReg?.id === r.id ? 'white' : '#0f172a' }}>
                           {selectedReg?.id === r.id ? 'Selected' : 'Select'}
@@ -138,7 +183,7 @@ export default function LuckyDraw() {
             </button>
           </div>
           {selectedReg && (
-            <p style={{ margin: 0, color: '#334155' }}>Selected: <strong>{selectedReg.name}</strong> ({selectedReg.phone}) for <strong>{winnerMonth}</strong></p>
+            <p style={{ margin: 0, color: '#334155' }}>Selected: <strong>{selectedReg.name}</strong> ({selectedReg.phone}) - Card: <strong>{selectedReg.card_no}</strong> for <strong>{winnerMonth}</strong></p>
           )}
         </div>
       </div>
@@ -155,6 +200,7 @@ export default function LuckyDraw() {
                 <th style={{ textAlign: 'left', borderBottom: '1px solid #e5e7eb', padding: 8 }}>Month</th>
                 <th style={{ textAlign: 'left', borderBottom: '1px solid #e5e7eb', padding: 8 }}>Name</th>
                 <th style={{ textAlign: 'left', borderBottom: '1px solid #e5e7eb', padding: 8 }}>Phone</th>
+                <th style={{ textAlign: 'left', borderBottom: '1px solid #e5e7eb', padding: 8 }}>Card Number</th>
                 <th style={{ textAlign: 'left', borderBottom: '1px solid #e5e7eb', padding: 8 }}>Prize</th>
               </tr>
             </thead>
@@ -163,8 +209,9 @@ export default function LuckyDraw() {
                 <tr key={r.id}>
                   <td style={{ padding: 8 }}>{new Date(r.created_at).toLocaleString()}</td>
                   <td style={{ padding: 8 }}>{r.winner_month || '-'}</td>
-                  <td style={{ padding: 8 }}>{r.registrations?.name}</td>
-                  <td style={{ padding: 8 }}>{r.registrations?.phone}</td>
+                  <td style={{ padding: 8 }}>{r.registrations?.name || r.laptop_registrations?.name || r.inverter_registrations?.name || r.camera_registrations?.name || 'N/A'}</td>
+                  <td style={{ padding: 8 }}>{r.registrations?.phone || r.laptop_registrations?.phone || r.inverter_registrations?.phone || r.camera_registrations?.phone || 'N/A'}</td>
+                  <td style={{ padding: 8 }}>{r.registrations?.card_no || r.laptop_registrations?.card_no || r.inverter_registrations?.card_no || r.camera_registrations?.card_no || 'N/A'}</td>
                   <td style={{ padding: 8 }}>{r.prize ?? '-'}</td>
                 </tr>
               ))}

@@ -382,100 +382,167 @@ button:focus-visible {
   background: #5B0000;
 }
 
-/* Mobile responsive design */
+/* Enhanced Mobile responsive design */
 @media (max-width: 768px) {
+  /* Typography improvements */
   .hero-title {
-    font-size: 2.5rem !important;
+    font-size: 2.2rem !important;
     line-height: 1.2;
+    text-align: center;
+    padding: 0 1rem;
   }
   
   .hero-subtitle {
-    font-size: 1.3rem !important;
+    font-size: 1.2rem !important;
+    text-align: center;
+    padding: 0 1rem;
   }
   
   .hero-description {
-    font-size: 1rem !important;
+    font-size: 0.95rem !important;
+    text-align: center;
+    padding: 0 1rem;
+    line-height: 1.5;
   }
   
+  /* Container and spacing adjustments */
+  #app {
+    padding: 1rem;
+    max-width: 100%;
+  }
+  
+  /* Rotating balls optimization */
   .rotating-balls {
-    height: 300px;
+    height: 280px;
   }
   
   .ball {
-    opacity: 0.7;
+    opacity: 0.6;
   }
   
   .ball:nth-child(1) {
-    width: 60px;
-    height: 60px;
+    width: 55px;
+    height: 55px;
   }
   
   .ball:nth-child(2) {
-    width: 45px;
-    height: 45px;
-  }
-  
-  .ball:nth-child(3) {
-    width: 75px;
-    height: 75px;
-  }
-  
-  .ball:nth-child(4) {
-    width: 50px;
-    height: 50px;
-  }
-  
-  .ball:nth-child(5) {
-    width: 35px;
-    height: 35px;
-  }
-}
-
-@media (max-width: 480px) {
-  .hero-title {
-    font-size: 2rem !important;
-    letter-spacing: 0.02em;
-  }
-  
-  .hero-subtitle {
-    font-size: 1.1rem !important;
-  }
-  
-  .hero-description {
-    font-size: 0.9rem !important;
-  }
-  
-  .rotating-balls {
-    height: 250px;
-  }
-  
-  .ball {
-    opacity: 0.5;
-  }
-  
-  .ball:nth-child(1) {
-    width: 50px;
-    height: 50px;
-  }
-  
-  .ball:nth-child(2) {
-    width: 35px;
-    height: 35px;
-  }
-  
-  .ball:nth-child(3) {
-    width: 60px;
-    height: 60px;
-  }
-  
-  .ball:nth-child(4) {
     width: 40px;
     height: 40px;
+  }
+  
+  .ball:nth-child(3) {
+    width: 65px;
+    height: 65px;
+  }
+  
+  .ball:nth-child(4) {
+    width: 45px;
+    height: 45px;
   }
   
   .ball:nth-child(5) {
     width: 30px;
     height: 30px;
+  }
+  
+  /* Button improvements */
+  .btn-primary {
+    width: 100%;
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  /* Card improvements */
+  .service-card {
+    margin-bottom: 1.5rem;
+    border-radius: 12px;
+  }
+  
+  /* Navigation improvements */
+  .MuiAppBar-root {
+    padding: 0.5rem 0;
+  }
+  
+  .MuiToolbar-root {
+    min-height: 56px;
+    padding: 0 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Extra small mobile devices */
+  .hero-title {
+    font-size: 1.8rem !important;
+    letter-spacing: 0.02em;
+    padding: 0 0.5rem;
+  }
+  
+  .hero-subtitle {
+    font-size: 1rem !important;
+    padding: 0 0.5rem;
+  }
+  
+  .hero-description {
+    font-size: 0.85rem !important;
+    padding: 0 0.5rem;
+  }
+  
+  /* Container adjustments */
+  #app {
+    padding: 0.5rem;
+  }
+  
+  /* Rotating balls optimization for small screens */
+  .rotating-balls {
+    height: 220px;
+  }
+  
+  .ball {
+    opacity: 0.4;
+  }
+  
+  .ball:nth-child(1) {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .ball:nth-child(2) {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .ball:nth-child(3) {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .ball:nth-child(4) {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .ball:nth-child(5) {
+    width: 25px;
+    height: 25px;
+  }
+  
+  /* Button and form improvements */
+  .btn-primary {
+    padding: 0.875rem 1.5rem;
+    font-size: 0.95rem;
+  }
+  
+  /* Card spacing */
+  .service-card {
+    margin-bottom: 1rem;
+    padding: 1rem;
+  }
+  
+  /* Chip improvements */
+  .MuiChip-root {
+    font-size: 0.75rem;
+    height: 28px;
   }
 }
 
@@ -497,5 +564,94 @@ button:focus-visible {
   
   .btn-primary:active {
     transform: scale(0.95);
+  }
+  
+  /* Ensure minimum touch target size */
+  button, .MuiButton-root {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .MuiIconButton-root {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Improve tap targets */
+  .MuiChip-root {
+    min-height: 36px;
+  }
+}
+
+/* Additional mobile optimizations */
+@media (max-width: 768px) {
+  /* Improve scrolling performance */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Prevent horizontal scroll */
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* Optimize images for mobile */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  /* Improve form inputs */
+  .MuiTextField-root {
+    margin-bottom: 1rem;
+  }
+  
+  .MuiInputBase-input {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  /* Better spacing for cards */
+  .MuiCard-root {
+    margin-bottom: 1rem;
+  }
+  
+  /* Improve list items */
+  .MuiListItem-root {
+    padding: 0.75rem 1rem;
+  }
+  
+  /* Better drawer styling */
+  .MuiDrawer-paper {
+    width: 280px !important;
+  }
+}
+
+/* Landscape mobile optimization */
+@media (max-width: 768px) and (orientation: landscape) {
+  .hero-title {
+    font-size: 1.8rem !important;
+  }
+  
+  .hero-subtitle {
+    font-size: 1.1rem !important;
+  }
+  
+  .hero-description {
+    font-size: 0.9rem !important;
+  }
+  
+  .rotating-balls {
+    height: 200px;
+  }
+}
+
+/* High DPI mobile screens */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .service-card {
+    border-width: 0.5px;
+  }
+  
+  .MuiCard-root {
+    border-width: 0.5px;
   }
 }

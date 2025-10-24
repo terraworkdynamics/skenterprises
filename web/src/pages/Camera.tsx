@@ -27,6 +27,7 @@ import {
   Receipt as DueListIcon,
   CalendarMonth as MonthwiseIcon,
   Videocam as CameraIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material'
 
 export default function Camera() {
@@ -57,6 +58,14 @@ export default function Camera() {
       />
       <AppBar position="sticky" enableColorOnDark sx={{ bgcolor: '#800000', color: '#FDF6E3', boxShadow: '0 4px 20px rgba(128,0,0,0.25)' }}>
         <Toolbar sx={{ gap: 2 }}>
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate('/dashboard')}
+            sx={{ color: '#FDF6E3', mr: 1 }}
+            size="small"
+          >
+            Back
+          </Button>
           <CameraIcon sx={{ mr: 1 }} />
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 800 }}>
             Camera Services

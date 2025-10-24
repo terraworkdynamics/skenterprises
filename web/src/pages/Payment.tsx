@@ -19,7 +19,12 @@ import {
   InputLabel,
   FormControl,
   Alert,
+  Autocomplete,
+  CircularProgress,
 } from '@mui/material'
+import { useNavigate } from 'react-router-dom'
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import { sendWhatsAppMessage, validateWhatsAppData, formatPhoneNumber } from '../utils/whatsapp'
 
 type Registration = {
   id: string
@@ -41,6 +46,7 @@ type PaymentRow = {
 
 export default function Payment() {
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }, [])
+  const navigate = useNavigate()
   const { category } = useParams()
   const resolvedCategory = useMemo(() => {
     const c = (category || '').toLowerCase()
@@ -58,6 +64,83 @@ export default function Payment() {
   const [transactionId, setTransactionId] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [payments, setPayments] = useState<PaymentRow[]>([])
+  
+  // Auto-suggestion states
+  const [nameSuggestions, setNameSuggestions] = useState<Registration[]>([])
+  const [cardSuggestions, setCardSuggestions] = useState<Registration[]>([])
+  const [phoneSuggestions, setPhoneSuggestions] = useState<Registration[]>([])
+  const [loadingSuggestions, setLoadingSuggestions] = useState({ name: false, card: false, phone: false })
+
+  // Auto-suggestion functions
+  const fetchSuggestions = async (type: 'name' | 'card_no' | 'phone', query: string) => {
+    if (!query.trim() || query.length < 2) {
+      if (type === 'name') setNameSuggestions([])
+      else if (type === 'card_no') setCardSuggestions([])
+      else if (type === 'phone') setPhoneSuggestions([])
+      return
+    }
+
+    setLoadingSuggestions(prev => ({ ...prev, [type]: true }))
+    
+    if (!supabase) {
+      setLoadingSuggestions(prev => ({ ...prev, [type]: false }))
+      return
+    }
+
+    const registrationsTable = resolvedCategory ? `${resolvedCategory}_registrations` : 'registrations'
+    
+    try {
+      let queryBuilder = supabase.from(registrationsTable).select('*').limit(10)
+      
+      if (type === 'name') {
+        queryBuilder = queryBuilder.ilike('name', `%${query}%`)
+      } else if (type === 'card_no') {
+        queryBuilder = queryBuilder.ilike('card_no', `%${query}%`)
+      } else if (type === 'phone') {
+        queryBuilder = queryBuilder.ilike('phone', `%${query}%`)
+      }
+      
+      const { data, error } = await queryBuilder
+      
+      if (error) {
+        console.error('Error fetching suggestions:', error)
+      } else {
+        const suggestions = (data || []) as Registration[]
+        if (type === 'name') setNameSuggestions(suggestions)
+        else if (type === 'card_no') setCardSuggestions(suggestions)
+        else if (type === 'phone') setPhoneSuggestions(suggestions)
+      }
+    } catch (err) {
+      console.error('Error fetching suggestions:', err)
+    } finally {
+      setLoadingSuggestions(prev => ({ ...prev, [type]: false }))
+    }
+  }
+
+  // Debounced search functions
+  const debouncedNameSearch = useMemo(() => {
+    let timeoutId: number
+    return (query: string) => {
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(() => fetchSuggestions('name', query), 300)
+    }
+  }, [resolvedCategory])
+
+  const debouncedCardSearch = useMemo(() => {
+    let timeoutId: number
+    return (query: string) => {
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(() => fetchSuggestions('card_no', query), 300)
+    }
+  }, [resolvedCategory])
+
+  const debouncedPhoneSearch = useMemo(() => {
+    let timeoutId: number
+    return (query: string) => {
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(() => fetchSuggestions('phone', query), 300)
+    }
+  }, [resolvedCategory])
 
   async function searchBy(type: 'name' | 'card_no' | 'phone') {
     setError(null)
@@ -136,6 +219,28 @@ export default function Payment() {
     })
   }, [payments])
 
+  // Function to send WhatsApp message
+  async function handleWhatsAppMessage(customerData: Registration, paymentData: PaymentRow, category: string) {
+    const messageData = {
+      phone: formatPhoneNumber(customerData.phone),
+      customer_name: customerData.name,
+      amount: paymentData.amount,
+      payment_method: paymentData.method || 'Cash',
+      transaction_id: paymentData.transaction_id || undefined,
+      category: category
+    };
+
+    // Validate the data
+    const validationError = validateWhatsAppData(messageData);
+    if (validationError) {
+      console.error('WhatsApp message validation failed:', validationError);
+      return;
+    }
+
+    // Send the message
+    await sendWhatsAppMessage(messageData);
+  }
+
   async function recordPayment() {
     setWarning(null)
     if (!result || amount === '' || Number(amount) <= 0) {
@@ -170,12 +275,17 @@ export default function Payment() {
         .eq('registration_id', result.id)
         .order('created_at', { ascending: true })
       if (data) setPayments(data as PaymentRow[])
-      // print receipt
+      
+      // Send WhatsApp message after successful payment
       if (inserted) {
         try {
+          // Send WhatsApp message
+          await handleWhatsAppMessage(result, inserted as PaymentRow, resolvedCategory ? resolvedCategory : 'General')
+          
+          // Print receipt
           generateHtmlSlip(result, inserted as PaymentRow, resolvedCategory ? resolvedCategory : 'General')
         } catch (e) {
-          console.error('Slip print failed', e)
+          console.error('Post-payment processing failed', e)
         }
       }
     }
@@ -262,45 +372,194 @@ export default function Payment() {
         }}
       />
       <Container sx={{ py: { xs: 4, md: 6 }, position: 'relative' }}>
-        <Typography variant="h4" sx={{ fontWeight: 800, mb: 2 }}>
-          Payment
-        </Typography>
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate(-1)}
+            variant="outlined"
+            size="small"
+          >
+            Back
+          </Button>
+          <Typography variant="h4" sx={{ fontWeight: 800 }}>
+            Payment
+          </Typography>
+        </Stack>
 
         <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
           <Stack spacing={2}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                label="Search by Name"
-                value={queryName}
-                onChange={(e) => setQueryName(e.target.value)}
-                fullWidth
-              />
-              <Button variant="contained" onClick={() => searchBy('name')}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: 'flex-start' }}>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Autocomplete
+                  options={nameSuggestions}
+                  getOptionLabel={(option) => typeof option === 'string' ? option : option.name}
+                  value={nameSuggestions.find(s => s.name === queryName) || null}
+                  onChange={(_, newValue) => {
+                    if (newValue) {
+                      setQueryName(newValue.name)
+                      setResult(newValue)
+                      setNameResults([])
+                      setNameSuggestions([])
+                    } else {
+                      setQueryName('')
+                      setResult(null)
+                    }
+                  }}
+                  onInputChange={(_, newInputValue) => {
+                    setQueryName(newInputValue)
+                    debouncedNameSearch(newInputValue)
+                  }}
+                  loading={loadingSuggestions.name}
+                  loadingText="Searching..."
+                  noOptionsText="No customers found"
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Search by Name"
+                      fullWidth
+                      InputProps={{
+                        ...params.InputProps,
+                        endAdornment: (
+                          <>
+                            {loadingSuggestions.name ? <CircularProgress color="inherit" size={20} /> : null}
+                            {params.InputProps.endAdornment}
+                          </>
+                        ),
+                      }}
+                    />
+                  )}
+                  renderOption={(props, option) => (
+                    <Box component="li" {...props}>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {option.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {option.phone} • {option.card_no || 'No card'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  )}
+                />
+              </Box>
+              <Button variant="contained" onClick={() => searchBy('name')} sx={{ minWidth: 120 }}>
                 Search
               </Button>
             </Stack>
 
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                label="Search by Card no"
-                value={queryCard}
-                onChange={(e) => setQueryCard(e.target.value)}
-                fullWidth
-              />
-              <Button variant="contained" onClick={() => searchBy('card_no')}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: 'flex-start' }}>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Autocomplete
+                  options={cardSuggestions}
+                  getOptionLabel={(option) => typeof option === 'string' ? option : option.card_no || ''}
+                  value={cardSuggestions.find(s => s.card_no === queryCard) || null}
+                  onChange={(_, newValue) => {
+                    if (newValue) {
+                      setQueryCard(newValue.card_no || '')
+                      setResult(newValue)
+                      setCardSuggestions([])
+                    } else {
+                      setQueryCard('')
+                      setResult(null)
+                    }
+                  }}
+                  onInputChange={(_, newInputValue) => {
+                    setQueryCard(newInputValue)
+                    debouncedCardSearch(newInputValue)
+                  }}
+                  loading={loadingSuggestions.card}
+                  loadingText="Searching..."
+                  noOptionsText="No customers found"
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Search by Card no"
+                      fullWidth
+                      InputProps={{
+                        ...params.InputProps,
+                        endAdornment: (
+                          <>
+                            {loadingSuggestions.card ? <CircularProgress color="inherit" size={20} /> : null}
+                            {params.InputProps.endAdornment}
+                          </>
+                        ),
+                      }}
+                    />
+                  )}
+                  renderOption={(props, option) => (
+                    <Box component="li" {...props}>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {option.card_no || 'No card'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {option.name} • {option.phone}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  )}
+                />
+              </Box>
+              <Button variant="contained" onClick={() => searchBy('card_no')} sx={{ minWidth: 120 }}>
                 Search
               </Button>
             </Stack>
 
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                label="Search by Phone no"
-                value={queryPhone}
-                onChange={(e) => setQueryPhone(e.target.value)}
-                inputProps={{ inputMode: 'numeric' }}
-                fullWidth
-              />
-              <Button variant="contained" onClick={() => searchBy('phone')}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: 'flex-start' }}>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Autocomplete
+                  options={phoneSuggestions}
+                  getOptionLabel={(option) => typeof option === 'string' ? option : option.phone}
+                  value={phoneSuggestions.find(s => s.phone === queryPhone) || null}
+                  onChange={(_, newValue) => {
+                    if (newValue) {
+                      setQueryPhone(newValue.phone)
+                      setResult(newValue)
+                      setPhoneSuggestions([])
+                    } else {
+                      setQueryPhone('')
+                      setResult(null)
+                    }
+                  }}
+                  onInputChange={(_, newInputValue) => {
+                    setQueryPhone(newInputValue)
+                    debouncedPhoneSearch(newInputValue)
+                  }}
+                  loading={loadingSuggestions.phone}
+                  loadingText="Searching..."
+                  noOptionsText="No customers found"
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Search by Phone no"
+                      inputProps={{ ...params.inputProps, inputMode: 'numeric' }}
+                      fullWidth
+                      InputProps={{
+                        ...params.InputProps,
+                        endAdornment: (
+                          <>
+                            {loadingSuggestions.phone ? <CircularProgress color="inherit" size={20} /> : null}
+                            {params.InputProps.endAdornment}
+                          </>
+                        ),
+                      }}
+                    />
+                  )}
+                  renderOption={(props, option) => (
+                    <Box component="li" {...props}>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {option.phone}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {option.name} • {option.card_no || 'No card'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  )}
+                />
+              </Box>
+              <Button variant="contained" onClick={() => searchBy('phone')} sx={{ minWidth: 120 }}>
                 Search
               </Button>
             </Stack>

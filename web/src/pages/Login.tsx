@@ -1,6 +1,6 @@
 import { type FormEvent, useEffect, useState } from 'react'
-import { Link as RouterLink, useNavigate } from 'react-router-dom'
-import { supabase } from '../utils/supabase'
+import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom'
+import { authManager } from '../utils/auth'
 
 import {
   Box,
@@ -21,6 +21,8 @@ import {
   Avatar,
   Fade,
   Slide,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material'
 import {
   Email as EmailIcon,
@@ -29,10 +31,15 @@ import {
   VisibilityOff as VisibilityOffIcon,
   Login as LoginIcon,
   Home as HomeIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material'
 
 export default function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }, [])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -41,27 +48,26 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // Removed auto-fill functionality to ensure no pre-filled values
+  // Get redirect path from location state
+  const from = (location.state as any)?.from || '/dashboard'
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
+    
     try {
-      if (!supabase) {
-        throw new Error('Missing Supabase configuration. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.')
-      }
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) {
-        throw error
-      }
-      if (data.session) {
+      const result = await authManager.signIn(email, password)
+      
+      if (result.success) {
         if (remember) {
           localStorage.setItem('rememberEmail', email)
         } else {
           localStorage.removeItem('rememberEmail')
         }
-        navigate('/dashboard')
+        navigate(from, { replace: true })
+      } else {
+        setError(result.error || 'Login failed')
       }
     } catch (err: any) {
       setError(err?.message ?? 'Login failed')
@@ -93,15 +99,60 @@ export default function Login() {
         }}
       />
 
-      <Container maxWidth="sm" sx={{ py: 4, position: 'relative', display: 'flex', justifyContent: 'center' }}>
+      <Container maxWidth="sm" sx={{ py: { xs: 2, sm: 4 }, position: 'relative', display: 'flex', justifyContent: 'center' }}>
+        <Box sx={{ position: 'absolute', top: { xs: 10, sm: 20 }, left: { xs: 10, sm: 20 }, zIndex: 1000 }}>
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate('/')}
+            variant="outlined"
+            size={isMobile ? "small" : "medium"}
+            sx={{ 
+              bgcolor: 'rgba(255,255,255,0.9)',
+              fontSize: isMobile ? '0.75rem' : '0.875rem'
+            }}
+          >
+            Back
+          </Button>
+        </Box>
         <Fade in timeout={700}>
-          <Paper elevation={8} sx={{ p: { xs: 3, md: 4 }, borderRadius: 3, maxWidth: 520, mx: 'auto', background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(128,0,0,0.2)', boxShadow: '0 10px 30px rgba(128,0,0,0.08)' }}>
+          <Paper elevation={8} sx={{ 
+            p: { xs: 2, sm: 3, md: 4 }, 
+            borderRadius: 3, 
+            maxWidth: 520, 
+            mx: 'auto', 
+            width: '100%',
+            background: 'rgba(255,255,255,0.95)', 
+            border: '1px solid rgba(128,0,0,0.2)', 
+            boxShadow: '0 10px 30px rgba(128,0,0,0.08)' 
+          }}>
             <Slide in timeout={700} direction="up">
               <Box>
                 <Stack spacing={2} alignItems="center">
-                  <Avatar src="/logo.jpeg" alt="SK Enterprises" sx={{ width: 58, height: 58, boxShadow: 1 }} />
-                  <Typography variant="h5" sx={{ fontWeight: 800, color: '#800000', letterSpacing: 0.3 }}>Admin Login</Typography>
-                  <Typography color="text.secondary" align="center">
+                  <Avatar 
+                    src="/logo.jpeg" 
+                    alt="SK Enterprises" 
+                    sx={{ 
+                      width: { xs: 48, sm: 58 }, 
+                      height: { xs: 48, sm: 58 }, 
+                      boxShadow: 1 
+                    }} 
+                  />
+                  <Typography 
+                    variant={isMobile ? "h6" : "h5"} 
+                    sx={{ 
+                      fontWeight: 800, 
+                      color: '#800000', 
+                      letterSpacing: 0.3,
+                      fontSize: isMobile ? '1.25rem' : '1.5rem'
+                    }}
+                  >
+                    Admin Login
+                  </Typography>
+                  <Typography 
+                    color="text.secondary" 
+                    align="center"
+                    sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                  >
                     Welcome! Please sign in to access the admin dashboard.
                   </Typography>
                   {error && <Alert severity="error" onClose={() => setError(null)} sx={{ alignSelf: 'stretch' }}>{error}</Alert>}
@@ -117,6 +168,11 @@ export default function Login() {
                       fullWidth
                       required
                       autoComplete="email"
+                      sx={{
+                        '& .MuiInputBase-input': {
+                          fontSize: '16px', // Prevents zoom on iOS
+                        },
+                      }}
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
@@ -133,6 +189,11 @@ export default function Login() {
                       fullWidth
                       required
                       autoComplete="current-password"
+                      sx={{
+                        '& .MuiInputBase-input': {
+                          fontSize: '16px', // Prevents zoom on iOS
+                        },
+                      }}
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
@@ -141,7 +202,16 @@ export default function Login() {
                         ),
                         endAdornment: (
                           <InputAdornment position="end">
-                            <IconButton aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword((v) => !v)} edge="end">
+                            <IconButton 
+                              aria-label={showPassword ? 'Hide password' : 'Show password'} 
+                              onClick={() => setShowPassword((v) => !v)} 
+                              edge="end"
+                              sx={{ 
+                                minHeight: 44, 
+                                minWidth: 44,
+                                touchAction: 'manipulation'
+                              }}
+                            >
                               {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                             </IconButton>
                           </InputAdornment>
@@ -150,30 +220,58 @@ export default function Login() {
                     />
 
                     <FormControlLabel
-                      control={<Checkbox checked={remember} onChange={(e) => setRemember(e.target.checked)} />}
-                      label="Remember my email on this device"
+                      control={
+                        <Checkbox 
+                          checked={remember} 
+                          onChange={(e) => setRemember(e.target.checked)}
+                          sx={{ 
+                            '& .MuiSvgIcon-root': { fontSize: { xs: 20, sm: 24 } }
+                          }}
+                        />
+                      }
+                      label={
+                        <Typography sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                          Remember my email on this device
+                        </Typography>
+                      }
                     />
 
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'stretch', sm: 'center' }}>
                       <Button
                         type="submit"
-                        size="large"
+                        size={isMobile ? "medium" : "large"}
                         startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <LoginIcon />}
                         disabled={loading}
                         sx={{
-                          px: 4,
-                          py: 1.2,
+                          px: { xs: 3, sm: 4 },
+                          py: { xs: 1.5, sm: 1.2 },
                           color: '#fff',
                           fontWeight: 700,
                           letterSpacing: 0.6,
+                          fontSize: { xs: '0.875rem', sm: '1rem' },
+                          minHeight: 44,
                           background: 'linear-gradient(90deg,#800000 0%, #5B0000 100%)',
                           '&:hover': { background: 'linear-gradient(90deg,#5B0000 0%, #440000 100%)' },
-                          boxShadow: '0 8px 20px rgba(128,0,0,0.25)'
+                          boxShadow: '0 8px 20px rgba(128,0,0,0.25)',
+                          touchAction: 'manipulation'
                         }}
                       >
                         {loading ? 'SIGNING IN' : 'SIGN IN'}
                       </Button>
-                      <Button component={RouterLink} to="/" variant="text" startIcon={<HomeIcon />}>Back to Home</Button>
+                      <Button 
+                        component={RouterLink} 
+                        to="/" 
+                        variant="text" 
+                        startIcon={<HomeIcon />}
+                        size={isMobile ? "medium" : "large"}
+                        sx={{
+                          fontSize: { xs: '0.875rem', sm: '1rem' },
+                          minHeight: 44,
+                          touchAction: 'manipulation'
+                        }}
+                      >
+                        Back to Home
+                      </Button>
                     </Stack>
                   </Stack>
                 </Box>

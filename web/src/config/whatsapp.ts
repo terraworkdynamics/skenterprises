@@ -2,7 +2,9 @@
 
 export const WHATSAPP_CONFIG = {
   // Backend URL for WhatsApp API
-  BACKEND_URL: import.meta.env.VITE_WHATSAPP_BACKEND_URL || '/backend/whatsapp_sender.php',
+  // Direct API integration - no backend needed
+  API_URL: 'https://app.whinta.com/api/send/template',
+  ACCESS_TOKEN: 'WHj8l4zmwHsc2CgyZZlsvnfsVxDT1ANuz8KkFb7s',
   
   // Template configuration
   TEMPLATE_NAME: 'sk_enterprises_',
